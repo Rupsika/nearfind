@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AppProvider, AppContext } from './src/context/AppContext';
 import NotificationToast from './src/components/NotificationToast';
 import CustomerPortal from './src/screens/CustomerPortal';
@@ -9,44 +10,81 @@ import RetailerPortal from './src/screens/RetailerPortal';
 import DeliveryPortal from './src/screens/DeliveryPortal';
 import AdminDashboard from './src/screens/AdminDashboard';
 
-// Standalone splash screen component — renders as its own full screen (early return)
+// ── DigiLocker-style Splash Screen ──────────────────────────────────────────────
 function SplashScreen({ onDone }) {
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  // Entry animations (logo + text fade+scale in on mount)
+  const entryFade = useRef(new Animated.Value(0)).current;
+  const entryScale = useRef(new Animated.Value(0.75)).current;
+  // Progress bar
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  // Exit animation
+  const exitFade = useRef(new Animated.Value(1)).current;
 
-  // Called by parent when both isLoaded AND min timer have fired
   useEffect(() => {
-    // Short breath before starting exit — feels more polished
+    // 1. Logo scales + fades in (0 → 300ms)
+    Animated.parallel([
+      Animated.timing(entryFade, { toValue: 1, duration: 350, useNativeDriver: true }),
+      Animated.spring(entryScale, { toValue: 1, friction: 6, tension: 60, useNativeDriver: true }),
+    ]).start();
+
+    // 2. Progress bar runs 0→100% over 2.2s
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: 2200,
+      useNativeDriver: false,
+    }).start();
+
+    // 3. Exit fade at 2.5s mark
     const exitTimer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.55,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start(() => onDone());
-    }, 100);
+      Animated.timing(exitFade, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }).start(() => onDone());
+    }, 2500);
 
     return () => clearTimeout(exitTimer);
   }, []);
 
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
   return (
-    <Animated.View style={[styles.splashScreen, { opacity: fadeAnim }]}>
-      <StatusBar style="dark" />
-      <Animated.View style={[styles.splashLogoWrapper, { transform: [{ scale: scaleAnim }] }]}>
-        <Image
-          source={require('./assets/logo.png')}
-          style={styles.splashImage}
-          resizeMode="contain"
-        />
+    <Animated.View style={[styles.splashRoot, { opacity: exitFade }]}>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={['#4f46e5', '#6366f1', '#818cf8']}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      {/* Center Content */}
+      <View style={styles.splashCenter}>
+        <Animated.View style={{ opacity: entryFade, transform: [{ scale: entryScale }], alignItems: 'center' }}>
+          <View style={styles.splashLogoBox}>
+            <Image
+              source={require('./assets/logo.png')}
+              style={styles.splashLogoImg}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.splashAppName}>NearFind</Text>
+
+          {/* Thin animated progress bar */}
+          <View style={styles.splashProgressTrack}>
+            <Animated.View style={[styles.splashProgressFill, { width: progressWidth }]} />
+          </View>
+        </Animated.View>
+      </View>
+
+      {/* Bottom tagline */}
+      <Animated.View style={[styles.splashBottom, { opacity: entryFade }]}>
+        <Text style={styles.splashTagline}>Hyperlocal discovery &</Text>
+        <Text style={styles.splashTagline}>lightning-fast deliveries</Text>
       </Animated.View>
-      <Text style={styles.splashTitle}>NearFind</Text>
-      <Text style={styles.splashTagline}>Hyperlocal · Fast · Reliable</Text>
     </Animated.View>
   );
 }
@@ -57,13 +95,13 @@ function MainAppShell() {
   const [minTimePassed, setMinTimePassed] = useState(false);
   const [exitingSplash, setExitingSplash] = useState(false);
 
-  // Minimum display time: 2.5 seconds regardless of load speed
+  // Minimum display time: 2.8 seconds (progress bar runs 2.2s + buffer)
   useEffect(() => {
-    const timer = setTimeout(() => setMinTimePassed(true), 2500);
+    const timer = setTimeout(() => setMinTimePassed(true), 2800);
     return () => clearTimeout(timer);
   }, []);
 
-  // Once BOTH conditions are met, trigger the exit animation
+  // Once BOTH isLoaded + min timer done, trigger exit
   useEffect(() => {
     if (isLoaded && minTimePassed && !exitingSplash) {
       setExitingSplash(true);
@@ -76,25 +114,37 @@ function MainAppShell() {
     (o) => o.status === 'Ready for Pickup' && !o.deliveryAccepted
   ).length;
 
-  // Show splash as full early return — guaranteed full screen, no overlay issues
+  // Show splash as full early return — guaranteed full screen
   if (showSplash) {
     return exitingSplash ? (
       <SplashScreen onDone={() => setShowSplash(false)} />
     ) : (
-      <View style={styles.splashScreen}>
-        <StatusBar style="dark" />
-        <View style={styles.splashLogoWrapper}>
-          <Image
-            source={require('./assets/logo.png')}
-            style={styles.splashImage}
-            resizeMode="contain"
-          />
+      // Static version while waiting (before exit is triggered)
+      <View style={styles.splashRoot}>
+        <StatusBar style="light" />
+        <LinearGradient
+          colors={['#4f46e5', '#6366f1', '#818cf8']}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <View style={styles.splashCenter}>
+          <View style={styles.splashLogoBox}>
+            <Image source={require('./assets/logo.png')} style={styles.splashLogoImg} resizeMode="contain" />
+          </View>
+          <Text style={styles.splashAppName}>NearFind</Text>
+          <View style={styles.splashProgressTrack}>
+            <View style={[styles.splashProgressFill, { width: '0%' }]} />
+          </View>
         </View>
-        <Text style={styles.splashTitle}>NearFind</Text>
-        <Text style={styles.splashTagline}>Hyperlocal · Fast · Reliable</Text>
+        <View style={styles.splashBottom}>
+          <Text style={styles.splashTagline}>Hyperlocal discovery &</Text>
+          <Text style={styles.splashTagline}>lightning-fast deliveries</Text>
+        </View>
       </View>
     );
   }
+
 
   const renderActiveScreen = () => {
     switch (activeRole) {
@@ -176,41 +226,58 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  // ── Splash ──────────────────────────────────────────────────────────────────
-  splashScreen: {
+  // ── Splash (DigiLocker-style) ─────────────────────────────────────────────────
+  splashRoot: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#4f46e5',   // fallback if gradient not loaded
+  },
+  splashCenter: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  splashLogoWrapper: {
-    width: 160,
-    height: 160,
-    borderRadius: 32,
-    overflow: 'hidden',
-    marginBottom: 28,
-    shadowColor: '#4f46e5',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
+  splashLogoBox: {
+    width: 110,
+    height: 110,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  splashImage: {
-    width: 160,
-    height: 160,
+  splashLogoImg: {
+    width: 80,
+    height: 80,
   },
-  splashTitle: {
-    fontSize: 30,
+  splashAppName: {
+    fontSize: 32,
     fontWeight: '800',
-    color: '#0f172a',
+    color: '#ffffff',
     letterSpacing: 0.5,
-    marginBottom: 8,
+    marginBottom: 28,
+  },
+  splashProgressTrack: {
+    width: 140,
+    height: 3,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  splashProgressFill: {
+    height: '100%',
+    backgroundColor: '#ffffff',
+    borderRadius: 2,
+  },
+  splashBottom: {
+    paddingBottom: 52,
+    alignItems: 'center',
   },
   splashTagline: {
-    fontSize: 13,
-    color: '#94a3b8',
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.75)',
     fontWeight: '500',
-    letterSpacing: 1.5,
+    lineHeight: 22,
+    textAlign: 'center',
   },
 
   // ── App Shell ────────────────────────────────────────────────────────────────
