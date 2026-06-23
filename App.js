@@ -15,35 +15,30 @@ function MainAppShell() {
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Start fading out the welcome screen at 2150ms and complete by 2500ms
-    const fadeTimer = setTimeout(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
-    }, 2150);
+    if (isLoaded) {
+      // Start fading out the welcome screen 1800ms after isLoaded becomes true, completing by 2200ms
+      const fadeTimer = setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }).start();
+      }, 1800);
 
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 2500);
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 2200);
 
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(timer);
-    };
-  }, [fadeAnim]);
+      return () => {
+        clearTimeout(fadeTimer);
+        clearTimeout(timer);
+      };
+    }
+  }, [isLoaded, fadeAnim]);
 
 
 
-  if (!isLoaded) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4f46e5" />
-        <Text style={styles.loadingText}>Initializing NearFind...</Text>
-      </View>
-    );
-  }
+  // App initialization rendering handles loading state inside the main shell
 
   // Calculate dynamic notification badges for the tabs to make demo testing seamless
   // 1. Retailer Badge: count of all 'Placed' orders system-wide
@@ -91,61 +86,70 @@ function MainAppShell() {
       
       {/* Active Screen Area */}
       <View style={styles.screenContainer}>
-        {renderActiveScreen()}
+        {isLoaded ? (
+          renderActiveScreen()
+        ) : (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4f46e5" />
+            <Text style={styles.loadingText}>Initializing NearFind...</Text>
+          </View>
+        )}
       </View>
 
       {/* Custom Bottom Tab Bar Navigation */}
-      <View style={styles.tabBar}>
-        {/* Customer Tab */}
-        <TouchableOpacity
-          style={styles.tabBtn}
-          onPress={() => selectRole('customer')}
-        >
-          <Ionicons name="cart" size={24} color={getRoleColor('customer')} />
-          <Text style={[styles.tabLabel, { color: getRoleColor('customer') }]}>Customer</Text>
-        </TouchableOpacity>
+      {isLoaded && (
+        <View style={styles.tabBar}>
+          {/* Customer Tab */}
+          <TouchableOpacity
+            style={styles.tabBtn}
+            onPress={() => selectRole('customer')}
+          >
+            <Ionicons name="cart" size={24} color={getRoleColor('customer')} />
+            <Text style={[styles.tabLabel, { color: getRoleColor('customer') }]}>Customer</Text>
+          </TouchableOpacity>
 
-        {/* Retailer Tab */}
-        <TouchableOpacity
-          style={styles.tabBtn}
-          onPress={() => selectRole('retailer')}
-        >
-          <View>
-            <Ionicons name="storefront" size={24} color={getRoleColor('retailer')} />
-            {retailerPendingCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{retailerPendingCount}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={[styles.tabLabel, { color: getRoleColor('retailer') }]}>Retailer</Text>
-        </TouchableOpacity>
+          {/* Retailer Tab */}
+          <TouchableOpacity
+            style={styles.tabBtn}
+            onPress={() => selectRole('retailer')}
+          >
+            <View>
+              <Ionicons name="storefront" size={24} color={getRoleColor('retailer')} />
+              {retailerPendingCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{retailerPendingCount}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.tabLabel, { color: getRoleColor('retailer') }]}>Retailer</Text>
+          </TouchableOpacity>
 
-        {/* Delivery Tab */}
-        <TouchableOpacity
-          style={styles.tabBtn}
-          onPress={() => selectRole('delivery')}
-        >
-          <View>
-            <Ionicons name="bicycle" size={24} color={getRoleColor('delivery')} />
-            {deliveryAvailableCount > 0 && (
-              <View style={[styles.badge, { backgroundColor: '#f59e0b' }]}>
-                <Text style={styles.badgeText}>{deliveryAvailableCount}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={[styles.tabLabel, { color: getRoleColor('delivery') }]}>Delivery</Text>
-        </TouchableOpacity>
+          {/* Delivery Tab */}
+          <TouchableOpacity
+            style={styles.tabBtn}
+            onPress={() => selectRole('delivery')}
+          >
+            <View>
+              <Ionicons name="bicycle" size={24} color={getRoleColor('delivery')} />
+              {deliveryAvailableCount > 0 && (
+                <View style={[styles.badge, { backgroundColor: '#f59e0b' }]}>
+                  <Text style={styles.badgeText}>{deliveryAvailableCount}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.tabLabel, { color: getRoleColor('delivery') }]}>Delivery</Text>
+          </TouchableOpacity>
 
-        {/* Admin Tab */}
-        <TouchableOpacity
-          style={styles.tabBtn}
-          onPress={() => selectRole('admin')}
-        >
-          <Ionicons name="analytics" size={24} color={getRoleColor('admin')} />
-          <Text style={[styles.tabLabel, { color: getRoleColor('admin') }]}>Admin</Text>
-        </TouchableOpacity>
-      </View>
+          {/* Admin Tab */}
+          <TouchableOpacity
+            style={styles.tabBtn}
+            onPress={() => selectRole('admin')}
+          >
+            <Ionicons name="analytics" size={24} color={getRoleColor('admin')} />
+            <Text style={[styles.tabLabel, { color: getRoleColor('admin') }]}>Admin</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Overlay Splash Screen */}
       {showSplash && (
