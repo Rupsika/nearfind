@@ -22,9 +22,9 @@ function MainAppShell() {
   }
 
   // Calculate dynamic notification badges for the tabs to make demo testing seamless
-  // 1. Retailer Badge: count of 'Placed' orders for the currently selected retailer
+  // 1. Retailer Badge: count of all 'Placed' orders system-wide
   const retailerPendingCount = orders.filter(
-    (o) => o.status === 'Placed' && o.retailerId === activeRetailerId
+    (o) => o.status === 'Placed'
   ).length;
 
   // 2. Delivery Badge: count of available 'Ready for Pickup' delivery jobs

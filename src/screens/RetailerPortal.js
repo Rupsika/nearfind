@@ -178,6 +178,7 @@ export default function RetailerPortal() {
         <View style={styles.selectorContainer}>
           {Object.entries(retailers).map(([id, meta]) => {
             const isSelected = activeRetailerId === id;
+            const hasPending = orders.some((o) => o.status === 'Placed' && o.retailerId === id);
             return (
               <TouchableOpacity
                 key={id}
@@ -187,12 +188,17 @@ export default function RetailerPortal() {
                   isSelected && styles.selectorTabActive,
                 ]}
               >
-                <Ionicons
-                  name={meta.icon}
-                  size={18}
-                  color={isSelected ? '#0f172a' : '#94a3b8'}
-                  style={{ marginBottom: 4 }}
-                />
+                <View>
+                  <Ionicons
+                    name={meta.icon}
+                    size={18}
+                    color={isSelected ? '#0f172a' : '#94a3b8'}
+                    style={{ marginBottom: 4 }}
+                  />
+                  {hasPending && (
+                    <View style={styles.dotBadge} />
+                  )}
+                </View>
                 <Text style={[styles.selectorText, isSelected && styles.selectorTextActive]} numberOfLines={1}>
                   {id === 'sharma' ? 'Sharma Kirana' : id === 'quick_mart' ? 'Quick Mart' : 'Super Save'}
                 </Text>
@@ -473,5 +479,16 @@ const styles = StyleSheet.create({
   },
   colorGray: {
     color: '#64748b',
+  },
+  dotBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -6,
+    backgroundColor: '#ef4444',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ffffff',
   },
 });
