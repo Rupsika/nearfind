@@ -34,20 +34,7 @@ function MainAppShell() {
     };
   }, [fadeAnim]);
 
-  if (showSplash) {
-    return (
-      <Animated.View style={[styles.splashContainer, { opacity: fadeAnim }]}>
-        <SafeAreaView style={styles.splashContent}>
-          <Image
-            source={require('./assets/logo.png')}
-            style={styles.splashImage}
-            resizeMode="contain"
-          />
-          <ActivityIndicator size="small" color="#10b981" style={styles.splashLoader} />
-        </SafeAreaView>
-      </Animated.View>
-    );
-  }
+
 
   if (!isLoaded) {
     return (
@@ -159,6 +146,20 @@ function MainAppShell() {
           <Text style={[styles.tabLabel, { color: getRoleColor('admin') }]}>Admin</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Overlay Splash Screen */}
+      {showSplash && (
+        <Animated.View style={[styles.splashContainer, { opacity: fadeAnim }]}>
+          <SafeAreaView style={styles.splashContent}>
+            <Image
+              source={require('./assets/logo.png')}
+              style={styles.splashImage}
+              resizeMode="contain"
+            />
+            <ActivityIndicator size="small" color="#10b981" style={styles.splashLoader} />
+          </SafeAreaView>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -180,10 +181,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   splashContainer: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 9999,
   },
   splashContent: {
     flex: 1,
