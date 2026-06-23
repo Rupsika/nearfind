@@ -11,7 +11,7 @@ import DeliveryPortal from './src/screens/DeliveryPortal';
 import AdminDashboard from './src/screens/AdminDashboard';
 
 // ── NearFind Splash Screen ────────────────────────────────────────────────────
-const SPLASH_BG = '#0d1117';       // Deep dark — unique NearFind brand
+const SPLASH_BG = '#f0fdf4';       // Light mint — fresh NearFind brand
 const SPLASH_ACCENT = '#10b981';   // Emerald green — fresh, delivery-feel
 
 function SplashScreen({ onDone }) {
@@ -60,7 +60,7 @@ function SplashScreen({ onDone }) {
 
   return (
     <Animated.View style={[styles.splashRoot, { opacity: exitOp }]}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Subtle radial glow behind logo */}
       <View style={styles.splashGlow} />
@@ -127,7 +127,7 @@ function MainAppShell() {
     ) : (
       // Static (waiting) — pure dark, no animation yet
       <View style={styles.splashRoot}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <View style={styles.splashGlow} />
         <View style={styles.splashCenter}>
           <View style={styles.splashLogoBox}>
@@ -226,19 +226,19 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  // ── Splash — NearFind dark theme ─────────────────────────────────────────────
+  // ── Splash — NearFind light green theme ─────────────────────────────────────
   splashRoot: {
     flex: 1,
-    backgroundColor: '#0d1117',
+    backgroundColor: '#f0fdf4',
   },
-  // Soft emerald radial glow behind the logo
+  // Soft mint circle glow behind the logo
   splashGlow: {
     position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: '#10b98118',
-    top: '30%',
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: '#bbf7d060',
+    top: '22%',
     alignSelf: 'center',
   },
   splashCenter: {
@@ -250,17 +250,17 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 30,
-    backgroundColor: '#161b22',
-    borderWidth: 1,
-    borderColor: '#10b98130',
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#6ee7b7',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 22,
     shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 8,
   },
   splashLogoImg: {
     width: 84,
@@ -269,21 +269,21 @@ const styles = StyleSheet.create({
   splashAppName: {
     fontSize: 30,
     fontWeight: '800',
-    color: '#f0fdf4',
+    color: '#065f46',
     letterSpacing: 1,
     marginBottom: 24,
   },
   splashProgressTrack: {
     width: 120,
-    height: 2,
-    backgroundColor: '#1f2937',
-    borderRadius: 1,
+    height: 3,
+    backgroundColor: '#d1fae5',
+    borderRadius: 2,
     overflow: 'hidden',
   },
   splashProgressFill: {
     height: '100%',
     backgroundColor: '#10b981',
-    borderRadius: 1,
+    borderRadius: 2,
   },
   splashBottom: {
     paddingBottom: 56,
