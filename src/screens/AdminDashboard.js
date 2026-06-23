@@ -30,6 +30,25 @@ export default function AdminDashboard() {
 
   const totalRevenue = completedOrders.reduce((sum, o) => sum + o.totalPrice, 0);
 
+  // Status percentages
+  const total = totalOrdersCount || 1;
+  const deliveredPct = Math.round((completedOrders.length / total) * 100);
+  const activePct = Math.round((activeOrdersCount / total) * 100);
+  const cancelledPct = Math.round((cancelledOrdersCount / total) * 100);
+
+  // Revenue split by store
+  const salesByStore = { sharma: 0, quick_mart: 0, super_save: 0 };
+  completedOrders.forEach((o) => {
+    if (salesByStore[o.retailerId] !== undefined) {
+      salesByStore[o.retailerId] += o.totalPrice;
+    }
+  });
+
+  const totalSalesVal = totalRevenue || 1;
+  const sharmaSalesPct = Math.round((salesByStore.sharma / totalSalesVal) * 100);
+  const quickMartSalesPct = Math.round((salesByStore.quick_mart / totalSalesVal) * 100);
+  const superSaveSalesPct = Math.round((salesByStore.super_save / totalSalesVal) * 100);
+
   const formatTimestamp = (ts) => {
     const d = new Date(ts);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -82,6 +101,106 @@ export default function AdminDashboard() {
             <Text style={styles.kpiLabel}>Cancelled/Rej</Text>
           </View>
         </View>
+
+        {/* Visual Analytics Charts Card */}
+        {totalOrdersCount > 0 && (
+          <View style={styles.sectionHeaderContainer}>
+            <Ionicons name="pie-chart-outline" size={18} color="#475569" style={{ marginRight: 6 }} />
+            <Text style={styles.sectionTitle}>System Analytics & Charts</Text>
+          </View>
+        )}
+        
+        {totalOrdersCount > 0 && (
+          <View style={styles.analyticsCard}>
+            {/* Chart 1: Order Distribution */}
+            <Text style={styles.chartTitle}>Order Status Allocation</Text>
+            
+            <View style={styles.chartRow}>
+              <View style={styles.chartLabelRow}>
+                <Text style={styles.chartLabelText}>Delivered</Text>
+                <Text style={styles.chartValueText}>{completedOrders.length} ({deliveredPct}%)</Text>
+              </View>
+              <View style={styles.barTrack}>
+                <LinearGradient
+                  colors={['#34d399', '#10b981']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.barFill, { width: `${deliveredPct}%` }]}
+                />
+              </View>
+            </View>
+
+            <View style={styles.chartRow}>
+              <View style={styles.chartLabelRow}>
+                <Text style={styles.chartLabelText}>Active Deliveries</Text>
+                <Text style={styles.chartValueText}>{activeOrdersCount} ({activePct}%)</Text>
+              </View>
+              <View style={styles.barTrack}>
+                <LinearGradient
+                  colors={['#60a5fa', '#3b82f6']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.barFill, { width: `${activePct}%` }]}
+                />
+              </View>
+            </View>
+
+            <View style={styles.chartRow}>
+              <View style={styles.chartLabelRow}>
+                <Text style={styles.chartLabelText}>Cancelled / Rejected</Text>
+                <Text style={styles.chartValueText}>{cancelledOrdersCount} ({cancelledPct}%)</Text>
+              </View>
+              <View style={styles.barTrack}>
+                <LinearGradient
+                  colors={['#f87171', '#ef4444']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.barFill, { width: `${cancelledPct}%` }]}
+                />
+              </View>
+            </View>
+
+            {/* Divider */}
+            {totalRevenue > 0 && <View style={styles.chartDivider} />}
+
+            {/* Chart 2: Store Revenue Split */}
+            {totalRevenue > 0 && (
+              <View>
+                <Text style={styles.chartTitle}>Store Revenue Distribution (₹{totalRevenue})</Text>
+                <View style={styles.segmentedBarTrack}>
+                  {salesByStore.sharma > 0 && (
+                    <View style={[styles.segmentedSegment, { width: `${sharmaSalesPct}%`, backgroundColor: '#6366f1' }]} />
+                  )}
+                  {salesByStore.quick_mart > 0 && (
+                    <View style={[styles.segmentedSegment, { width: `${quickMartSalesPct}%`, backgroundColor: '#10b981' }]} />
+                  )}
+                  {salesByStore.super_save > 0 && (
+                    <View style={[styles.segmentedSegment, { width: `${superSaveSalesPct}%`, backgroundColor: '#f59e0b' }]} />
+                  )}
+                </View>
+
+                {/* Legend */}
+                <View style={styles.legendContainer}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#6366f1' }]} />
+                    <Text style={styles.legendLabel}>Sharma Kirana</Text>
+                    <Text style={styles.legendValue}>₹{salesByStore.sharma} ({sharmaSalesPct}%)</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
+                    <Text style={styles.legendLabel}>Quick Mart</Text>
+                    <Text style={styles.legendValue}>₹{salesByStore.quick_mart} ({quickMartSalesPct}%)</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#f59e0b' }]} />
+                    <Text style={styles.legendLabel}>Super Save</Text>
+                    <Text style={styles.legendValue}>₹{salesByStore.super_save} ({superSaveSalesPct}%)</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Real-time Inventory Tracker */}
         <View style={styles.sectionHeaderContainer}>
@@ -492,5 +611,89 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 13,
     fontWeight: '700',
+  },
+  analyticsCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 20,
+  },
+  chartTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  chartRow: {
+    marginBottom: 14,
+  },
+  chartLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  chartLabelText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748b',
+  },
+  chartValueText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  barTrack: {
+    height: 10,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  chartDivider: {
+    height: 1,
+    backgroundColor: '#e2e8f0',
+    marginVertical: 16,
+  },
+  segmentedBarTrack: {
+    height: 16,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  segmentedSegment: {
+    height: '100%',
+  },
+  legendContainer: {
+    gap: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  legendLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+    flex: 1,
+  },
+  legendValue: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0f172a',
   },
 });
