@@ -22,7 +22,8 @@ export default function CustomerPortal() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [dismissedOrderId, setDismissedOrderId] = useState(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState('shop');
+  const [expandedHistoryOrderId, setExpandedHistoryOrderId] = useState(null);
 
   // Filter products by search query
   const filteredProducts = products.filter((p) =>
@@ -334,6 +335,162 @@ export default function CustomerPortal() {
     );
   }
 
+  const renderOrderHistoryItem = ({ item }) => {
+    const isFailed = ['Rejected', 'Cancelled (Retailer Timeout)', 'Cancelled (No Delivery Partner)'].includes(item.status);
+    const isCompleted = item.status === 'Delivered';
+    const isExpanded = expandedHistoryOrderId === item.id;
+
+    // Stepper setup
+    const steps = [
+      { name: 'Placed', icon: 'cart-outline' },
+      { name: 'Accepted', icon: 'storefront-outline' },
+      { name: 'Packed', icon: 'cube-outline' },
+      { name: 'Ready for Pickup', icon: 'alarm-outline' },
+      { name: 'Picked Up', icon: 'bicycle-outline' },
+      { name: 'Delivered', icon: 'home-outline' },
+    ];
+
+    const getActiveStepIndex = (status) => {
+      if (status === 'Placed') return 0;
+      if (status === 'Accepted') return 1;
+      if (status === 'Packed') return 2;
+      if (status === 'Ready for Pickup') return 3;
+      if (status === 'Picked Up') return 4;
+      if (status === 'Delivered') return 5;
+      return -1;
+    };
+
+    const activeStepIndex = getActiveStepIndex(item.status);
+    const formattedDate = new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return (
+      <View style={styles.orderHistoryCard}>
+        <TouchableOpacity
+          style={styles.orderHistoryHeader}
+          onPress={() => setExpandedHistoryOrderId(isExpanded ? null : item.id)}
+          activeOpacity={0.7}
+        >
+          <View style={{ flex: 1 }}>
+            <View style={styles.historyCardHeaderTop}>
+              <Text style={styles.orderHistoryTitle}>Order #{item.id}</Text>
+              <View style={[
+                styles.historyItemStatusBadge,
+                isCompleted ? styles.badgeGreen : isFailed ? styles.badgeRed : styles.badgeBlue
+              ]}>
+                <Text style={[
+                  styles.historyItemStatusText,
+                  isCompleted ? styles.textGreen : isFailed ? styles.textRed : styles.textBlue
+                ]}>
+                  {item.status}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.orderHistoryProductText}>{item.quantity}x {item.productName}</Text>
+            <Text style={styles.orderHistoryMeta}>
+              From {item.retailerName} • ₹{item.totalPrice}
+            </Text>
+            <Text style={styles.orderHistoryTime}>
+              {formattedDate}
+            </Text>
+          </View>
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color="#64748b"
+            style={{ marginLeft: 8 }}
+          />
+        </TouchableOpacity>
+
+        {isExpanded && (
+          <View style={styles.expandedContent}>
+            <View style={styles.historyTimelineDivider} />
+            
+            {/* Live active order tracking shortcut button */}
+            {!isCompleted && !isFailed && (
+              <TouchableOpacity
+                style={styles.trackOverlayBtn}
+                onPress={() => setTrackingOrderId(item.id)}
+              >
+                <Ionicons name="navigate-outline" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                <Text style={styles.trackOverlayBtnText}>Track Live Status (Full Screen)</Text>
+              </TouchableOpacity>
+            )}
+
+            {!isFailed ? (
+              <View style={styles.historyStepperContainer}>
+                {steps.map((step, idx) => {
+                  const isCompletedStep = idx < activeStepIndex;
+                  const isActiveStep = idx === activeStepIndex;
+                  const isPendingStep = idx > activeStepIndex;
+
+                  const stepHistory = item.statusHistory?.find((h) => h.status === step.name);
+                  const stepTime = stepHistory
+                    ? new Date(stepHistory.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : '';
+
+                  return (
+                    <View key={step.name} style={styles.historyStepRow}>
+                      <View style={styles.historyStepIndicatorCol}>
+                        <View style={[
+                          styles.historyStepDot,
+                          isCompletedStep && styles.historyStepDotCompleted,
+                          isActiveStep && styles.historyStepDotActive,
+                          isPendingStep && styles.historyStepDotPending,
+                        ]}>
+                          <Ionicons
+                            name={step.icon}
+                            size={12}
+                            color={isCompletedStep ? '#ffffff' : isActiveStep ? '#4f46e5' : '#94a3b8'}
+                          />
+                        </View>
+                        {idx < steps.length - 1 && (
+                          <View style={[
+                            styles.historyStepLine,
+                            idx < activeStepIndex && styles.historyStepLineCompleted
+                          ]} />
+                        )}
+                      </View>
+
+                      <View style={styles.historyStepContentCol}>
+                        <Text style={[
+                          styles.historyStepNameText,
+                          isActiveStep && styles.historyStepNameActiveText,
+                          isPendingStep && styles.historyStepNamePendingText,
+                        ]}>
+                          {step.name}
+                        </Text>
+                        {stepTime ? (
+                          <Text style={styles.historyStepTimeText}>{stepTime}</Text>
+                        ) : isActiveStep ? (
+                          <Text style={styles.historyStepTimeActiveLabel}>In progress...</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={styles.historyFailedTimeline}>
+                <View style={styles.failedHeaderRow}>
+                  <Ionicons name="close-circle-outline" size={24} color="#ef4444" />
+                  <Text style={styles.failedTitle}>Order Cancelled / Rejected</Text>
+                </View>
+                <Text style={styles.failedDescription}>
+                  {item.status === 'Rejected' && `The retailer Sharma Kirana rejected your order. The stock has been restored, and no payment was charged.`}
+                  {item.status === 'Cancelled (Retailer Timeout)' && `Sharma Kirana failed to accept the order within 30 seconds.`}
+                  {item.status === 'Cancelled (No Delivery Partner)' && `No delivery rider accepted within 45 seconds.`}
+                </Text>
+                <Text style={styles.failedTimestamp}>
+                  Ended: {new Date(item.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+      </View>
+    );
+  };
+
   // Render primary product browse list view
   return (
     <View style={styles.container}>
@@ -341,122 +498,108 @@ export default function CustomerPortal() {
         <Text style={styles.appTitle}>NearFind</Text>
         <Text style={styles.appSubtitle}>Hyperlocal discovery & lightning-fast deliveries</Text>
 
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
-          <TextInput
-            placeholder="Search noodles, butter, atta, beverages..."
-            placeholderTextColor="#94a3b8"
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="#94a3b8" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        {activeSubTab === 'shop' && (
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+            <TextInput
+              placeholder="Search noodles, butter, atta, beverages..."
+              placeholderTextColor="#94a3b8"
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color="#94a3b8" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
       </LinearGradient>
 
-      {/* Collapsible Order History Panel */}
-      {orders.length > 0 && (
-        <View style={styles.historySection}>
-          <TouchableOpacity
-            style={styles.historyHeader}
-            onPress={() => setShowHistory(!showHistory)}
-          >
-            <View style={styles.historyHeaderLeft}>
-              <Ionicons name="receipt-outline" size={18} color="#4f46e5" style={{ marginRight: 8 }} />
-              <Text style={styles.historyTitleText}>My Orders ({orders.length})</Text>
+      {/* Sub Tabs */}
+      <View style={styles.subTabRow}>
+        <TouchableOpacity
+          onPress={() => setActiveSubTab('shop')}
+          style={[styles.subTabBtn, activeSubTab === 'shop' && styles.subTabBtnActive]}
+        >
+          <Text style={[styles.subTabLabel, activeSubTab === 'shop' && styles.subTabLabelActive]}>
+            Shop Items
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setActiveSubTab('orders')}
+          style={[styles.subTabBtn, activeSubTab === 'orders' && styles.subTabBtnActive]}
+        >
+          <Text style={[styles.subTabLabel, activeSubTab === 'orders' && styles.subTabLabelActive]}>
+            My Orders ({orders.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeSubTab === 'shop' ? (
+        <FlatList
+          data={filteredProducts}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="search-outline" size={60} color="#cbd5e1" />
+              <Text style={styles.emptyText}>No items found matching your query</Text>
             </View>
-            <Ionicons name={showHistory ? 'chevron-up' : 'chevron-down'} size={18} color="#475569" />
-          </TouchableOpacity>
+          }
+          renderItem={({ item }) => {
+            // Calculate overall availability
+            const storesWithStock = Object.values(item.retailers).filter((r) => r.stock > 0).length;
+            const totalStores = Object.keys(item.retailers).length;
+            const bestPrice = Math.min(...Object.values(item.retailers).map((r) => r.price));
 
-          {showHistory && (
-            <ScrollView style={styles.historyScroll} nestedScrollEnabled={true}>
-              {orders.map((item) => {
-                const isFailed = ['Rejected', 'Cancelled (Retailer Timeout)', 'Cancelled (No Delivery Partner)'].includes(item.status);
-                const isCompleted = item.status === 'Delivered';
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.historyItemCard}
-                    onPress={() => setTrackingOrderId(item.id)}
-                  >
-                    <View style={styles.historyItemTop}>
-                      <Text style={styles.historyItemOrderNumber}>Order #{item.id}</Text>
+            return (
+              <TouchableOpacity
+                style={styles.productCard}
+                onPress={() => setSelectedProduct(item)}
+              >
+                <LinearGradient colors={['#f8fafc', '#f1f5f9']} style={styles.productImagePlaceholder}>
+                  <Ionicons name="cube-outline" size={40} color="#94a3b8" />
+                </LinearGradient>
+                <View style={styles.productInfo}>
+                  <Text style={styles.productCategory}>{item.category}</Text>
+                  <Text style={styles.productName}>{item.name}</Text>
+                  <View style={styles.productFooter}>
+                    <Text style={styles.productPriceLabel}>
+                      From <Text style={styles.productPriceText}>₹{bestPrice}</Text>
+                    </Text>
+                    <View style={styles.availabilityRow}>
                       <View style={[
-                        styles.historyItemStatusBadge,
-                        isCompleted ? styles.badgeGreen : isFailed ? styles.badgeRed : styles.badgeBlue
-                      ]}>
-                        <Text style={[
-                          styles.historyItemStatusText,
-                          isCompleted ? styles.textGreen : isFailed ? styles.textRed : styles.textBlue
-                        ]}>
-                          {item.status}
-                        </Text>
-                      </View>
+                        styles.indicatorDot,
+                        storesWithStock > 0 ? styles.dotGreen : styles.dotRed
+                      ]} />
+                      <Text style={styles.availabilityText}>
+                        {storesWithStock > 0 ? `${storesWithStock}/${totalStores} stores in stock` : 'Out of stock'}
+                      </Text>
                     </View>
-                    <Text style={styles.historyItemName}>{item.quantity}x {item.productName}</Text>
-                    <Text style={styles.historyItemMeta}>From {item.retailerName} • ₹{item.totalPrice}</Text>
-                    <Text style={styles.historyItemTime}>
-                      {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          )}
-        </View>
-      )}
-
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="search-outline" size={60} color="#cbd5e1" />
-            <Text style={styles.emptyText}>No items found matching your query</Text>
-          </View>
-        }
-        renderItem={({ item }) => {
-          // Calculate overall availability
-          const storesWithStock = Object.values(item.retailers).filter((r) => r.stock > 0).length;
-          const totalStores = Object.keys(item.retailers).length;
-          const bestPrice = Math.min(...Object.values(item.retailers).map((r) => r.price));
-
-          return (
-            <TouchableOpacity
-              style={styles.productCard}
-              onPress={() => setSelectedProduct(item)}
-            >
-              <LinearGradient colors={['#f8fafc', '#f1f5f9']} style={styles.productImagePlaceholder}>
-                <Ionicons name="cube-outline" size={40} color="#94a3b8" />
-              </LinearGradient>
-              <View style={styles.productInfo}>
-                <Text style={styles.productCategory}>{item.category}</Text>
-                <Text style={styles.productName}>{item.name}</Text>
-                <View style={styles.productFooter}>
-                  <Text style={styles.productPriceLabel}>
-                    From <Text style={styles.productPriceText}>₹{bestPrice}</Text>
-                  </Text>
-                  <View style={styles.availabilityRow}>
-                    <View style={[
-                      styles.indicatorDot,
-                      storesWithStock > 0 ? styles.dotGreen : styles.dotRed
-                    ]} />
-                    <Text style={styles.availabilityText}>
-                      {storesWithStock > 0 ? `${storesWithStock}/${totalStores} stores in stock` : 'Out of stock'}
-                    </Text>
                   </View>
                 </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#cbd5e1" style={styles.arrowIcon} />
-            </TouchableOpacity>
-          );
-        }}
-      />
+                <Ionicons name="chevron-forward" size={20} color="#cbd5e1" style={styles.arrowIcon} />
+              </TouchableOpacity>
+            );
+          }}
+        />
+      ) : (
+        <FlatList
+          data={orders}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="receipt-outline" size={60} color="#cbd5e1" />
+              <Text style={styles.emptyText}>You haven't placed any orders yet</Text>
+            </View>
+          }
+          renderItem={renderOrderHistoryItem}
+        />
+      )}
 
       {/* Floating live order progress pill */}
       {showFloatingPill && (
@@ -1108,53 +1251,180 @@ const styles = StyleSheet.create({
   colorRed: {
     color: '#ef4444',
   },
-  historySection: {
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  historyHeader: {
+  subTabRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  historyHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  historyTitleText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  historyScroll: {
-    maxHeight: 200,
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-  },
-  historyItemCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 3,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  historyItemTop: {
+  subTabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  subTabBtnActive: {
+    backgroundColor: '#eef2ff',
+  },
+  subTabLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  subTabLabelActive: {
+    color: '#4f46e5',
+    fontWeight: '700',
+  },
+  orderHistoryCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.01,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  orderHistoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
   },
-  historyItemOrderNumber: {
+  historyCardHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+    paddingRight: 10,
+  },
+  orderHistoryTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  orderHistoryProductText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginTop: 2,
+  },
+  orderHistoryMeta: {
+    fontSize: 13,
+    color: '#475569',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  orderHistoryTime: {
+    fontSize: 11,
+    color: '#94a3b8',
+    marginTop: 4,
+  },
+  expandedContent: {
+    marginTop: 12,
+  },
+  historyTimelineDivider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+    marginBottom: 12,
+  },
+  trackOverlayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4f46e5',
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  trackOverlayBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  historyStepperContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  historyStepRow: {
+    flexDirection: 'row',
+    minHeight: 48,
+  },
+  historyStepIndicatorCol: {
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  historyStepDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  historyStepDotCompleted: {
+    backgroundColor: '#10b981',
+    borderColor: '#10b981',
+  },
+  historyStepDotActive: {
+    borderColor: '#4f46e5',
+    backgroundColor: '#e0e7ff',
+  },
+  historyStepDotPending: {
+    borderColor: '#cbd5e1',
+  },
+  historyStepLine: {
+    width: 1.5,
+    flex: 1,
+    backgroundColor: '#e2e8f0',
+    marginVertical: 2,
+  },
+  historyStepLineCompleted: {
+    backgroundColor: '#10b981',
+  },
+  historyStepContentCol: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: 10,
+  },
+  historyStepNameText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#0f172a',
+  },
+  historyStepNameActiveText: {
+    color: '#4f46e5',
+  },
+  historyStepNamePendingText: {
+    color: '#94a3b8',
+  },
+  historyStepTimeText: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 1,
+  },
+  historyStepTimeActiveLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#818cf8',
+    marginTop: 1,
+  },
+  historyFailedTimeline: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#fee2e2',
   },
   historyItemStatusBadge: {
     paddingHorizontal: 8,
@@ -1165,22 +1435,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     textTransform: 'uppercase',
-  },
-  historyItemName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#334155',
-  },
-  historyItemMeta: {
-    fontSize: 11,
-    color: '#64748b',
-    marginTop: 2,
-  },
-  historyItemTime: {
-    fontSize: 10,
-    color: '#94a3b8',
-    marginTop: 4,
-    textAlign: 'right',
   },
   badgeGreen: {
     backgroundColor: '#f0fdf4',
