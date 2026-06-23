@@ -85,6 +85,7 @@ export const AppProvider = ({ children }) => {
   const [activeRole, setActiveRole] = useState('customer'); // customer | retailer | delivery | admin
   const [activeRetailerId, setActiveRetailerId] = useState('sharma'); // sharma | quick_mart | super_save
   const [notifications, setNotifications] = useState([]);
+  const [trackingOrderId, setTrackingOrderId] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Persistence keys
@@ -92,6 +93,7 @@ export const AppProvider = ({ children }) => {
   const PERSIST_KEY_ORDERS = '@nearfind_orders_v1';
   const PERSIST_KEY_ROLE = '@nearfind_role_v1';
   const PERSIST_KEY_RETAILER = '@nearfind_retailer_v1';
+  const PERSIST_KEY_TRACKING_ORDER_ID = '@nearfind_tracking_order_id_v1';
 
   // Load state from local storage on mount
   useEffect(() => {
@@ -101,11 +103,13 @@ export const AppProvider = ({ children }) => {
         const storedOrders = await AsyncStorage.getItem(PERSIST_KEY_ORDERS);
         const storedRole = await AsyncStorage.getItem(PERSIST_KEY_ROLE);
         const storedRetailer = await AsyncStorage.getItem(PERSIST_KEY_RETAILER);
+        const storedTrackingOrderId = await AsyncStorage.getItem(PERSIST_KEY_TRACKING_ORDER_ID);
 
         if (storedProducts) setProducts(JSON.parse(storedProducts));
         if (storedOrders) setOrders(JSON.parse(storedOrders));
         if (storedRole) setActiveRole(storedRole);
         if (storedRetailer) setActiveRetailerId(storedRetailer);
+        if (storedTrackingOrderId) setTrackingOrderId(JSON.parse(storedTrackingOrderId));
       } catch (e) {
         console.error('Failed to load local state:', e);
       } finally {
@@ -123,6 +127,13 @@ export const AppProvider = ({ children }) => {
       console.error(`Failed to save state for ${key}:`, e);
     }
   };
+
+  // Persist tracking order ID when it changes
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(PERSIST_KEY_TRACKING_ORDER_ID, trackingOrderId);
+    }
+  }, [trackingOrderId, isLoaded]);
 
   // Toast Notification helper
   const addNotification = useCallback((message, type = 'info') => {
@@ -197,6 +208,7 @@ export const AppProvider = ({ children }) => {
         return updatedOrders;
       });
 
+      setTrackingOrderId(newOrder.id);
       addNotification(`Order ${newOrder.id} placed at ${newOrder.retailerName}!`, 'success');
       return { success: true, order: newOrder };
     }
@@ -340,8 +352,10 @@ export const AppProvider = ({ children }) => {
     try {
       await AsyncStorage.removeItem(PERSIST_KEY_PRODUCTS);
       await AsyncStorage.removeItem(PERSIST_KEY_ORDERS);
+      await AsyncStorage.removeItem(PERSIST_KEY_TRACKING_ORDER_ID);
       setProducts(SEED_PRODUCTS);
       setOrders([]);
+      setTrackingOrderId(null);
       setNotifications([]);
       addNotification('System reset successful. Seed data loaded!', 'info');
     } catch (e) {
@@ -453,6 +467,8 @@ export const AppProvider = ({ children }) => {
         activeRetailerId,
         notifications,
         isLoaded,
+        trackingOrderId,
+        setTrackingOrderId,
         placeOrder,
         acceptOrder,
         rejectOrder,

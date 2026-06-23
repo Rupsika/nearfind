@@ -17,11 +17,11 @@ import { AppContext } from '../context/AppContext';
 const { width } = Dimensions.get('window');
 
 export default function CustomerPortal() {
-  const { products, orders, placeOrder, selectRole } = useContext(AppContext);
+  const { products, orders, placeOrder, selectRole, trackingOrderId, setTrackingOrderId } = useContext(AppContext);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [trackingOrderId, setTrackingOrderId] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [dismissedOrderId, setDismissedOrderId] = useState(null);
 
   // Filter products by search query
   const filteredProducts = products.filter((p) =>
@@ -29,18 +29,12 @@ export default function CustomerPortal() {
     p.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Find the latest active order for tracking in background/floating pill
-  const activeOrders = orders.filter(
-    (o) => !['Delivered', 'Rejected', 'Cancelled (Retailer Timeout)', 'Cancelled (No Delivery Partner)'].includes(o.status)
-  );
-  const latestActiveOrder = activeOrders.length > 0 ? activeOrders[0] : null;
+  // Find the latest order overall
+  const latestOrder = orders.length > 0 ? orders[0] : null;
+  const isLatestOrderActive = latestOrder && !['Delivered', 'Rejected', 'Cancelled (Retailer Timeout)', 'Cancelled (No Delivery Partner)'].includes(latestOrder.status);
 
-  // Set the tracking order to the latest active order if it is placed and user isn't tracking anything
-  useEffect(() => {
-    if (latestActiveOrder && !trackingOrderId) {
-      setTrackingOrderId(latestActiveOrder.id);
-    }
-  }, [latestActiveOrder]);
+  // Show floating pill if the order is active, OR if it's not active but the customer hasn't dismissed it yet
+  const showFloatingPill = latestOrder && (isLatestOrderActive || dismissedOrderId !== latestOrder.id);
 
   const currentTrackingOrder = orders.find((o) => o.id === trackingOrderId);
 
@@ -412,20 +406,53 @@ export default function CustomerPortal() {
       />
 
       {/* Floating live order progress pill */}
-      {latestActiveOrder && (
+      {showFloatingPill && (
         <TouchableOpacity
-          style={styles.floatingTrackPill}
-          onPress={() => setTrackingOrderId(latestActiveOrder.id)}
+          style={[
+            styles.floatingTrackPill,
+            !isLatestOrderActive && (
+              latestOrder.status === 'Delivered' ? styles.floatingTrackPillSuccess : styles.floatingTrackPillFailed
+            )
+          ]}
+          onPress={() => setTrackingOrderId(latestOrder.id)}
         >
           <View style={styles.floatingContent}>
             <View style={styles.pulseContainer}>
-              <View style={styles.pulseDot} />
+              <View style={[
+                styles.pulseDot,
+                !isLatestOrderActive && (
+                  latestOrder.status === 'Delivered' ? styles.pulseDotSuccess : styles.pulseDotFailed
+                )
+              ]} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.floatingTitle}>Active Order #{latestActiveOrder.id}</Text>
-              <Text style={styles.floatingSubtitle}>{latestActiveOrder.productName} is {latestActiveOrder.status}</Text>
+              <Text style={styles.floatingTitle}>
+                {isLatestOrderActive 
+                  ? `Active Order #${latestOrder.id}` 
+                  : latestOrder.status === 'Delivered' 
+                    ? `Order Delivered! 🥳` 
+                    : `Order Cancelled / Rejected`}
+              </Text>
+              <Text style={styles.floatingSubtitle}>
+                {isLatestOrderActive 
+                  ? `${latestOrder.productName} is ${latestOrder.status}`
+                  : `Tap to view details`}
+              </Text>
             </View>
             <Ionicons name="eye" size={20} color="#ffffff" style={{ marginLeft: 8 }} />
+            
+            {/* If completed/failed, show a close button to dismiss */}
+            {!isLatestOrderActive && (
+              <TouchableOpacity
+                style={styles.closePillBtn}
+                onPress={(e) => {
+                  e.stopPropagation(); // Prevent launching the tracking screen
+                  setDismissedOrderId(latestOrder.id);
+                }}
+              >
+                <Ionicons name="close-circle" size={20} color="rgba(255, 255, 255, 0.75)" style={{ marginLeft: 12 }} />
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       )}
@@ -978,6 +1005,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
+  floatingTrackPillSuccess: {
+    backgroundColor: '#065f46',
+  },
+  floatingTrackPillFailed: {
+    backgroundColor: '#991b1b',
+  },
   floatingContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -992,6 +1025,15 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#22c55e',
+  },
+  pulseDotSuccess: {
+    backgroundColor: '#34d399',
+  },
+  pulseDotFailed: {
+    backgroundColor: '#f87171',
+  },
+  closePillBtn: {
+    padding: 4,
   },
   floatingTitle: {
     color: '#ffffff',
