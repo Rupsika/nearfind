@@ -162,7 +162,7 @@ export default function DeliveryPortal() {
       )}
 
       {activeSubTab === 'active' && (
-        <ScrollView contentContainerStyle={styles.activeContainer}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.activeContainer}>
           {currentActiveJob ? (
             <View style={styles.activeJobCard}>
               <View style={styles.activeHeader}>

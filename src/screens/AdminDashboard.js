@@ -62,7 +62,7 @@ export default function AdminDashboard() {
         <Text style={styles.dashboardTitle}>NearFind System Stats</Text>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
         {/* KPI Grid */}
         <View style={styles.kpiGrid}>
           <View style={styles.kpiCard}>

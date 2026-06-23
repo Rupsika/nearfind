@@ -83,7 +83,7 @@ export default function CustomerPortal() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.detailScrollContent}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.detailScrollContent}>
           <View style={styles.detailCard}>
             <LinearGradient colors={['#e2e8f0', '#f1f5f9']} style={styles.detailImageContainer}>
               <Ionicons name="fast-food" size={80} color="#94a3b8" />
@@ -219,7 +219,7 @@ export default function CustomerPortal() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.trackScrollContent}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.trackScrollContent}>
           {/* Main tracking status banner */}
           <LinearGradient
             colors={isFailed ? ['#fef2f2', '#fee2e2'] : isCompleted ? ['#f0fdf4', '#dcfce7'] : ['#e0e7ff', '#c7d2fe']}
