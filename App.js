@@ -10,60 +10,64 @@ import RetailerPortal from './src/screens/RetailerPortal';
 import DeliveryPortal from './src/screens/DeliveryPortal';
 import AdminDashboard from './src/screens/AdminDashboard';
 
-// ── DigiLocker-style Splash Screen ──────────────────────────────────────────────
+// ── NearFind Splash Screen ────────────────────────────────────────────────────
+const SPLASH_BG = '#0d1117';       // Deep dark — unique NearFind brand
+const SPLASH_ACCENT = '#10b981';   // Emerald green — fresh, delivery-feel
+
 function SplashScreen({ onDone }) {
-  // Entry animations (logo + text fade+scale in on mount)
-  const entryFade = useRef(new Animated.Value(0)).current;
-  const entryScale = useRef(new Animated.Value(0.75)).current;
-  // Progress bar
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  // Exit animation
-  const exitFade = useRef(new Animated.Value(1)).current;
+  // Each element slides up independently (staggered)
+  const logoY    = useRef(new Animated.Value(40)).current;
+  const logoOp   = useRef(new Animated.Value(0)).current;
+  const nameY    = useRef(new Animated.Value(30)).current;
+  const nameOp   = useRef(new Animated.Value(0)).current;
+  const barW     = useRef(new Animated.Value(0)).current;
+  const tagOp    = useRef(new Animated.Value(0)).current;
+  const tagY     = useRef(new Animated.Value(16)).current;
+  const exitOp   = useRef(new Animated.Value(1)).current;
+
+  const slide = (y, op, delay) => Animated.parallel([
+    Animated.timing(y,  { toValue: 0,   duration: 480, delay, useNativeDriver: true }),
+    Animated.timing(op, { toValue: 1,   duration: 400, delay, useNativeDriver: true }),
+  ]);
 
   useEffect(() => {
-    // 1. Logo scales + fades in (0 → 300ms)
-    Animated.parallel([
-      Animated.timing(entryFade, { toValue: 1, duration: 350, useNativeDriver: true }),
-      Animated.spring(entryScale, { toValue: 1, friction: 6, tension: 60, useNativeDriver: true }),
+    // Staggered slide-up: logo → name → bar → tagline
+    Animated.sequence([
+      slide(logoY, logoOp, 0),
+      slide(nameY, nameOp, 80),
+      Animated.timing(barW, { toValue: 1, duration: 1600, delay: 100, useNativeDriver: false }),
     ]).start();
 
-    // 2. Progress bar runs 0→100% over 2.2s
-    Animated.timing(progressAnim, {
-      toValue: 1,
-      duration: 2200,
-      useNativeDriver: false,
-    }).start();
+    // Tagline fades in after 300ms
+    Animated.parallel([
+      Animated.timing(tagOp, { toValue: 1, duration: 500, delay: 300, useNativeDriver: true }),
+      Animated.timing(tagY,  { toValue: 0, duration: 500, delay: 300, useNativeDriver: true }),
+    ]).start();
 
-    // 3. Exit fade at 2.5s mark
+    // Exit: fade everything out at 2.8s
     const exitTimer = setTimeout(() => {
-      Animated.timing(exitFade, {
+      Animated.timing(exitOp, {
         toValue: 0,
-        duration: 400,
+        duration: 450,
         useNativeDriver: true,
       }).start(() => onDone());
-    }, 2500);
+    }, 2800);
 
     return () => clearTimeout(exitTimer);
   }, []);
 
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
+  const barWidth = barW.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
   return (
-    <Animated.View style={[styles.splashRoot, { opacity: exitFade }]}>
+    <Animated.View style={[styles.splashRoot, { opacity: exitOp }]}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#4f46e5', '#6366f1', '#818cf8']}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
-      />
 
-      {/* Center Content */}
+      {/* Subtle radial glow behind logo */}
+      <View style={styles.splashGlow} />
+
+      {/* Center: logo + name + bar */}
       <View style={styles.splashCenter}>
-        <Animated.View style={{ opacity: entryFade, transform: [{ scale: entryScale }], alignItems: 'center' }}>
+        <Animated.View style={{ opacity: logoOp, transform: [{ translateY: logoY }] }}>
           <View style={styles.splashLogoBox}>
             <Image
               source={require('./assets/logo.png')}
@@ -71,23 +75,25 @@ function SplashScreen({ onDone }) {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.splashAppName}>NearFind</Text>
-
-          {/* Thin animated progress bar */}
-          <View style={styles.splashProgressTrack}>
-            <Animated.View style={[styles.splashProgressFill, { width: progressWidth }]} />
-          </View>
         </Animated.View>
+
+        <Animated.Text style={[styles.splashAppName, { opacity: nameOp, transform: [{ translateY: nameY }] }]}>
+          NearFind
+        </Animated.Text>
+
+        <View style={styles.splashProgressTrack}>
+          <Animated.View style={[styles.splashProgressFill, { width: barWidth }]} />
+        </View>
       </View>
 
       {/* Bottom tagline */}
-      <Animated.View style={[styles.splashBottom, { opacity: entryFade }]}>
-        <Text style={styles.splashTagline}>Hyperlocal discovery &</Text>
-        <Text style={styles.splashTagline}>lightning-fast deliveries</Text>
+      <Animated.View style={[styles.splashBottom, { opacity: tagOp, transform: [{ translateY: tagY }] }]}>
+        <Text style={styles.splashTagline}>Hyperlocal discovery &amp; lightning-fast deliveries</Text>
       </Animated.View>
     </Animated.View>
   );
 }
+
 
 function MainAppShell() {
   const { activeRole, selectRole, isLoaded, orders } = useContext(AppContext);
@@ -119,15 +125,10 @@ function MainAppShell() {
     return exitingSplash ? (
       <SplashScreen onDone={() => setShowSplash(false)} />
     ) : (
-      // Static version while waiting (before exit is triggered)
+      // Static (waiting) — pure dark, no animation yet
       <View style={styles.splashRoot}>
         <StatusBar style="light" />
-        <LinearGradient
-          colors={['#4f46e5', '#6366f1', '#818cf8']}
-          start={{ x: 0.2, y: 0 }}
-          end={{ x: 0.8, y: 1 }}
-          style={StyleSheet.absoluteFillObject}
-        />
+        <View style={styles.splashGlow} />
         <View style={styles.splashCenter}>
           <View style={styles.splashLogoBox}>
             <Image source={require('./assets/logo.png')} style={styles.splashLogoImg} resizeMode="contain" />
@@ -138,8 +139,7 @@ function MainAppShell() {
           </View>
         </View>
         <View style={styles.splashBottom}>
-          <Text style={styles.splashTagline}>Hyperlocal discovery &</Text>
-          <Text style={styles.splashTagline}>lightning-fast deliveries</Text>
+          <Text style={styles.splashTagline}>Hyperlocal discovery &amp; lightning-fast deliveries</Text>
         </View>
       </View>
     );
@@ -226,10 +226,20 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  // ── Splash (DigiLocker-style) ─────────────────────────────────────────────────
+  // ── Splash — NearFind dark theme ─────────────────────────────────────────────
   splashRoot: {
     flex: 1,
-    backgroundColor: '#4f46e5',   // fallback if gradient not loaded
+    backgroundColor: '#0d1117',
+  },
+  // Soft emerald radial glow behind the logo
+  splashGlow: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: '#10b98118',
+    top: '30%',
+    alignSelf: 'center',
   },
   splashCenter: {
     flex: 1,
@@ -237,47 +247,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   splashLogoBox: {
-    width: 110,
-    height: 110,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 120,
+    height: 120,
+    borderRadius: 30,
+    backgroundColor: '#161b22',
+    borderWidth: 1,
+    borderColor: '#10b98130',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 22,
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 12,
   },
   splashLogoImg: {
-    width: 80,
-    height: 80,
+    width: 84,
+    height: 84,
   },
   splashAppName: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: 0.5,
-    marginBottom: 28,
+    color: '#f0fdf4',
+    letterSpacing: 1,
+    marginBottom: 24,
   },
   splashProgressTrack: {
-    width: 140,
-    height: 3,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 2,
+    width: 120,
+    height: 2,
+    backgroundColor: '#1f2937',
+    borderRadius: 1,
     overflow: 'hidden',
   },
   splashProgressFill: {
     height: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 2,
+    backgroundColor: '#10b981',
+    borderRadius: 1,
   },
   splashBottom: {
-    paddingBottom: 52,
+    paddingBottom: 56,
     alignItems: 'center',
+    paddingHorizontal: 32,
   },
   splashTagline: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.75)',
+    fontSize: 13,
+    color: '#6b7280',
     fontWeight: '500',
-    lineHeight: 22,
     textAlign: 'center',
+    lineHeight: 20,
   },
 
   // ── App Shell ────────────────────────────────────────────────────────────────
