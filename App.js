@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
+import React, { useContext, useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, SafeAreaView, Image, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { AppProvider, AppContext } from './src/context/AppContext';
@@ -11,6 +11,43 @@ import AdminDashboard from './src/screens/AdminDashboard';
 
 function MainAppShell() {
   const { activeRole, selectRole, isLoaded, orders, activeRetailerId } = useContext(AppContext);
+  const [showSplash, setShowSplash] = useState(true);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Start fading out the welcome screen at 2150ms and complete by 2500ms
+    const fadeTimer = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }).start();
+    }, 2150);
+
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(timer);
+    };
+  }, [fadeAnim]);
+
+  if (showSplash) {
+    return (
+      <Animated.View style={[styles.splashContainer, { opacity: fadeAnim }]}>
+        <SafeAreaView style={styles.splashContent}>
+          <Image
+            source={require('./assets/logo.png')}
+            style={styles.splashImage}
+            resizeMode="contain"
+          />
+          <ActivityIndicator size="small" color="#10b981" style={styles.splashLoader} />
+        </SafeAreaView>
+      </Animated.View>
+    );
+  }
 
   if (!isLoaded) {
     return (
@@ -141,6 +178,25 @@ const styles = StyleSheet.create({
   },
   screenContainer: {
     flex: 1,
+  },
+  splashContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  splashContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  splashImage: {
+    width: '80%',
+    height: '60%',
+  },
+  splashLoader: {
+    marginTop: 20,
   },
   loadingContainer: {
     flex: 1,
