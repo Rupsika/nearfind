@@ -22,6 +22,7 @@ export default function CustomerPortal() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [dismissedOrderId, setDismissedOrderId] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Filter products by search query
   const filteredProducts = products.filter((p) =>
@@ -356,6 +357,58 @@ export default function CustomerPortal() {
           ) : null}
         </View>
       </LinearGradient>
+
+      {/* Collapsible Order History Panel */}
+      {orders.length > 0 && (
+        <View style={styles.historySection}>
+          <TouchableOpacity
+            style={styles.historyHeader}
+            onPress={() => setShowHistory(!showHistory)}
+          >
+            <View style={styles.historyHeaderLeft}>
+              <Ionicons name="receipt-outline" size={18} color="#4f46e5" style={{ marginRight: 8 }} />
+              <Text style={styles.historyTitleText}>My Orders ({orders.length})</Text>
+            </View>
+            <Ionicons name={showHistory ? 'chevron-up' : 'chevron-down'} size={18} color="#475569" />
+          </TouchableOpacity>
+
+          {showHistory && (
+            <ScrollView style={styles.historyScroll} nestedScrollEnabled={true}>
+              {orders.map((item) => {
+                const isFailed = ['Rejected', 'Cancelled (Retailer Timeout)', 'Cancelled (No Delivery Partner)'].includes(item.status);
+                const isCompleted = item.status === 'Delivered';
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.historyItemCard}
+                    onPress={() => setTrackingOrderId(item.id)}
+                  >
+                    <View style={styles.historyItemTop}>
+                      <Text style={styles.historyItemOrderNumber}>Order #{item.id}</Text>
+                      <View style={[
+                        styles.historyItemStatusBadge,
+                        isCompleted ? styles.badgeGreen : isFailed ? styles.badgeRed : styles.badgeBlue
+                      ]}>
+                        <Text style={[
+                          styles.historyItemStatusText,
+                          isCompleted ? styles.textGreen : isFailed ? styles.textRed : styles.textBlue
+                        ]}>
+                          {item.status}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.historyItemName}>{item.quantity}x {item.productName}</Text>
+                    <Text style={styles.historyItemMeta}>From {item.retailerName} • ₹{item.totalPrice}</Text>
+                    <Text style={styles.historyItemTime}>
+                      {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+      )}
 
       <FlatList
         data={filteredProducts}
@@ -1054,5 +1107,97 @@ const styles = StyleSheet.create({
   },
   colorRed: {
     color: '#ef4444',
+  },
+  historySection: {
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  historyHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  historyTitleText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  historyScroll: {
+    maxHeight: 200,
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  historyItemCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  historyItemTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  historyItemOrderNumber: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  historyItemStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  historyItemStatusText: {
+    fontSize: 9,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  historyItemName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  historyItemMeta: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  historyItemTime: {
+    fontSize: 10,
+    color: '#94a3b8',
+    marginTop: 4,
+    textAlign: 'right',
+  },
+  badgeGreen: {
+    backgroundColor: '#f0fdf4',
+  },
+  textGreen: {
+    color: '#10b981',
+  },
+  badgeRed: {
+    backgroundColor: '#fef2f2',
+  },
+  textRed: {
+    color: '#ef4444',
+  },
+  badgeBlue: {
+    backgroundColor: '#eff6ff',
+  },
+  textBlue: {
+    color: '#3b82f6',
   },
 });
