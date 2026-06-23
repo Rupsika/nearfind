@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, SafeAreaView, Image, Animated } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, Image, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { AppProvider, AppContext } from './src/context/AppContext';
@@ -13,28 +13,36 @@ function MainAppShell() {
   const { activeRole, selectRole, isLoaded, orders, activeRetailerId } = useContext(AppContext);
   const [showSplash, setShowSplash] = useState(true);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (isLoaded) {
-      // Start fading out the welcome screen 1800ms after isLoaded becomes true, completing by 2200ms
-      const fadeTimer = setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }).start();
+      // After 1800ms, run scale-down + fade simultaneously for a natural image-closing feel
+      const animTimer = setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 450,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 0.6,
+            duration: 450,
+            useNativeDriver: true,
+          }),
+        ]).start();
       }, 1800);
 
-      const timer = setTimeout(() => {
+      const hideTimer = setTimeout(() => {
         setShowSplash(false);
-      }, 2200);
+      }, 2260);
 
       return () => {
-        clearTimeout(fadeTimer);
-        clearTimeout(timer);
+        clearTimeout(animTimer);
+        clearTimeout(hideTimer);
       };
     }
-  }, [isLoaded, fadeAnim]);
+  }, [isLoaded, fadeAnim, scaleAnim]);
 
 
 
@@ -154,14 +162,16 @@ function MainAppShell() {
       {/* Overlay Splash Screen */}
       {showSplash && (
         <Animated.View style={[styles.splashContainer, { opacity: fadeAnim }]}>
-          <SafeAreaView style={styles.splashContent}>
+          <Animated.View style={[styles.splashLogoWrapper, { transform: [{ scale: scaleAnim }] }]}>
             <Image
               source={require('./assets/logo.png')}
               style={styles.splashImage}
               resizeMode="contain"
             />
-            <ActivityIndicator size="small" color="#10b981" style={styles.splashLoader} />
-          </SafeAreaView>
+          </Animated.View>
+          <Text style={styles.splashTitle}>NearFind</Text>
+          <Text style={styles.splashTagline}>Hyperlocal · Fast · Reliable</Text>
+          <ActivityIndicator size="small" color="#6366f1" style={styles.splashLoader} />
         </Animated.View>
       )}
     </View>
@@ -191,18 +201,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 9999,
   },
-  splashContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
+  splashLogoWrapper: {
+    width: 160,
+    height: 160,
+    borderRadius: 32,
+    overflow: 'hidden',
+    marginBottom: 24,
+    shadowColor: '#4f46e5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 10,
   },
   splashImage: {
-    width: '80%',
-    height: '60%',
+    width: 160,
+    height: 160,
+  },
+  splashTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#0f172a',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  splashTagline: {
+    fontSize: 13,
+    color: '#94a3b8',
+    fontWeight: '500',
+    letterSpacing: 1,
+    marginBottom: 36,
   },
   splashLoader: {
-    marginTop: 20,
+    marginTop: 0,
   },
   loadingContainer: {
     flex: 1,
