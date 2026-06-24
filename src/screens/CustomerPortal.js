@@ -1219,7 +1219,13 @@ export default function CustomerPortal() {
                   : 'information-circle'
             }
             size={20}
-            color="#ffffff"
+            color={
+              bannerNotif.type === 'error'
+                ? '#ef4444'
+                : bannerNotif.type === 'success'
+                  ? '#22c55e'
+                  : '#3b82f6'
+            }
             style={{ marginRight: 10 }}
           />
           <Text style={styles.notifBannerTxt}>{bannerNotif.message}</Text>
@@ -2822,23 +2828,25 @@ const styles = StyleSheet.create({
     top: 50,
     left: 16,
     right: 16,
-    backgroundColor: '#3b82f6',
+    backgroundColor: 'rgba(15, 23, 42, 0.98)',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#3b82f6',
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
     elevation: 10,
     zIndex: 9999,
   },
   notifBannerError: {
-    backgroundColor: '#ef4444',
+    borderColor: '#ef4444',
   },
   notifBannerSuccess: {
-    backgroundColor: '#16a34a',
+    borderColor: '#22c55e',
   },
   notifBannerTxt: {
     color: '#ffffff',
