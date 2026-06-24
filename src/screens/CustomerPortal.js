@@ -999,8 +999,8 @@ export default function CustomerPortal() {
               </View>
               <Text style={styles.failedDescription}>
                 {o.status === 'Rejected' && `The retailer ${o.retailerName || 'Sharma Kirana Store'} rejected your order. The stock has been restored, and no payment was charged.`}
-                {o.status === 'Cancelled (Retailer Timeout)' && `The retailer failed to accept the order within the 30-second window. The order was automatically cancelled.`}
-                {o.status === 'Cancelled (No Delivery Partner)' && `No delivery partner accepted the request within 45 seconds. The order was automatically cancelled.`}
+                {o.status === 'Cancelled (Retailer Timeout)' && `The retailer failed to accept the order within the 60-second window. The order was automatically cancelled.`}
+                {o.status === 'Cancelled (No Delivery Partner)' && `No delivery partner accepted the request within 60 seconds. The order was automatically cancelled.`}
               </Text>
               <Text style={styles.failedTimestamp}>
                 Time: {new Date(o.updatedAt).toLocaleTimeString()}
@@ -1195,8 +1195,8 @@ export default function CustomerPortal() {
                 </View>
                 <Text style={styles.failedDescription}>
                   {item.status === 'Rejected' && `The retailer ${item.retailerName || 'Sharma Kirana Store'} rejected your order. The stock has been restored, and no payment was charged.`}
-                  {item.status === 'Cancelled (Retailer Timeout)' && `Sharma Kirana failed to accept the order within 30 seconds.`}
-                  {item.status === 'Cancelled (No Delivery Partner)' && `No delivery rider accepted within 45 seconds.`}
+                  {item.status === 'Cancelled (Retailer Timeout)' && `Sharma Kirana failed to accept the order within 60 seconds.`}
+                  {item.status === 'Cancelled (No Delivery Partner)' && `No delivery rider accepted within 60 seconds.`}
                 </Text>
                 <Text style={styles.failedTimestamp}>
                   Ended: {new Date(item.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

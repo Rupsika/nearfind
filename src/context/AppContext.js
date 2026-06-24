@@ -514,7 +514,7 @@ export const AppProvider = ({ children }) => {
           status: 'Placed',
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          retailerTimeoutAt: Date.now() + 30000,
+          retailerTimeoutAt: Date.now() + 60000, // 1 minute to accept
           deliveryTimeoutAt: null,
           deliverySlot,
           statusHistory: [{ status: 'Placed', timestamp: Date.now() }]
@@ -593,7 +593,7 @@ export const AppProvider = ({ children }) => {
         status: 'Placed',
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        retailerTimeoutAt: Date.now() + 30000, // 30 seconds to accept
+        retailerTimeoutAt: Date.now() + 60000, // 1 minute to accept
         deliveryTimeoutAt: null,
         deliverySlot,
         statusHistory: [{ status: 'Placed', timestamp: Date.now() }]
@@ -702,7 +702,7 @@ export const AppProvider = ({ children }) => {
 
           // If transitioning to Ready for Pickup, start the 45-second delivery acceptance countdown
           if (nextStatus === 'Ready for Pickup') {
-            deliveryTimeoutAt = timestamp + 45000;
+            deliveryTimeoutAt = timestamp + 60000; // 1 minute to accept
             addNotification(`Order ${orderId} is Ready for Pickup! Awaiting a Delivery Partner...`, 'info');
           } else if (nextStatus === 'Picked Up') {
             deliveryTimeoutAt = null; // Accepted, cancel delivery partner timeout
