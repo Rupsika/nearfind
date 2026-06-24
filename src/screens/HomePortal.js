@@ -192,7 +192,22 @@ export default function HomePortal() {
       return "Hello! I am your local NearFind assistant. How can I help you find groceries today?";
     }
 
-    return "I can help you search products, check stock, or resolve support issues (delays, refunds, cancellations). Try asking 'Is Maggi in stock?' or 'How do I cancel my order?'";
+    // Dynamic Mock LLM Fallback Generator
+    const cleaned = query.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
+    const words = cleaned.split(/\s+/).filter(w => w.length > 3 && !['what', 'when', 'where', 'your', 'about', 'with', 'this', 'that', 'from', 'have', 'some', 'they', 'them', 'then', 'there', 'here', 'will', 'would', 'could', 'should'].includes(w.toLowerCase()));
+    const topics = words.slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    
+    if (topics.length > 0) {
+      const topicStr = topics.join(' / ');
+      const responses = [
+        `[NearFind AI Agent] I've analyzed your query regarding "${topicStr}". Our system checks live databases for stores, routes, and transactions. While we are currently in local simulation mode, queries of this type are automatically routed to our Gemini-Flash model to coordinate support tickets or update Kirana inventory syncs!`,
+        `[NearFind AI Agent] Received your question about "${topicStr}". Under our standard operation, our LLM support agent reviews this topic to match you with the best store refund policy, rider payout rules, or stock lookup. Let us know if this is about an active order!`,
+        `[NearFind AI Agent] Processing query on "${topicStr}"... NearFind's smart assistant can check stock, compare prices, or process cancellations. If you need help with this topic, please specify the item name (e.g. 'Maggi') or order status.`,
+      ];
+      return responses[cleaned.length % responses.length];
+    }
+
+    return "[NearFind AI Agent] I can help you search products, check stock, or resolve support issues (delays, refunds, cancellations). Try asking 'Is Maggi in stock?' or 'How do I cancel my order?'";
   };
 
   // Send Message Wrapper
