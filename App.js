@@ -62,19 +62,14 @@ function SplashScreen({ onDone }) {
     <Animated.View style={[styles.splashRoot, { opacity: exitOp }]}>
       <StatusBar style="dark" />
 
-      {/* Subtle radial glow behind logo */}
-      <View style={styles.splashGlow} />
-
       {/* Center: logo + name + bar */}
       <View style={styles.splashCenter}>
         <Animated.View style={{ opacity: logoOp, transform: [{ translateY: logoY }] }}>
-          <View style={styles.splashLogoBox}>
-            <Image
-              source={require('./assets/logo.png')}
-              style={styles.splashLogoImg}
-              resizeMode="contain"
-            />
-          </View>
+          <Image
+            source={require('./assets/logo.png')}
+            style={styles.splashLogoImg}
+            resizeMode="contain"
+          />
         </Animated.View>
 
         <Animated.Text style={[styles.splashAppName, { opacity: nameOp, transform: [{ translateY: nameY }] }]}>
@@ -125,14 +120,11 @@ function MainAppShell() {
     return exitingSplash ? (
       <SplashScreen onDone={() => setShowSplash(false)} />
     ) : (
-      // Static (waiting) — pure dark, no animation yet
+      // Static (waiting) — light green, no animation yet
       <View style={styles.splashRoot}>
         <StatusBar style="dark" />
-        <View style={styles.splashGlow} />
         <View style={styles.splashCenter}>
-          <View style={styles.splashLogoBox}>
-            <Image source={require('./assets/logo.png')} style={styles.splashLogoImg} resizeMode="contain" />
-          </View>
+          <Image source={require('./assets/logo.png')} style={styles.splashLogoImg} resizeMode="contain" />
           <Text style={styles.splashAppName}>NearFind</Text>
           <View style={styles.splashProgressTrack}>
             <View style={[styles.splashProgressFill, { width: '0%' }]} />
@@ -229,42 +221,17 @@ const styles = StyleSheet.create({
   // ── Splash — NearFind light green theme ─────────────────────────────────────
   splashRoot: {
     flex: 1,
-    backgroundColor: '#f0fdf4',
-  },
-  // Soft mint circle glow behind the logo
-  splashGlow: {
-    position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: '#bbf7d060',
-    top: '22%',
-    alignSelf: 'center',
+    backgroundColor: '#dcfce7',   // solid light green — full background
   },
   splashCenter: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  splashLogoBox: {
-    width: 120,
-    height: 120,
-    borderRadius: 30,
-    backgroundColor: '#ffffff',
-    borderWidth: 1.5,
-    borderColor: '#6ee7b7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 22,
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 8,
-  },
   splashLogoImg: {
-    width: 84,
-    height: 84,
+    width: 140,
+    height: 140,
+    marginBottom: 24,
   },
   splashAppName: {
     fontSize: 30,
@@ -274,9 +241,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   splashProgressTrack: {
-    width: 120,
+    width: 140,
     height: 3,
-    backgroundColor: '#d1fae5',
+    backgroundColor: '#bbf7d0',
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -292,7 +259,7 @@ const styles = StyleSheet.create({
   },
   splashTagline: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#047857',
     fontWeight: '500',
     textAlign: 'center',
     lineHeight: 20,
