@@ -16,18 +16,18 @@ const SPLASH_ACCENT = '#10b981';   // Emerald green — fresh, delivery-feel
 
 function SplashScreen({ onDone }) {
   // Each element slides up independently (staggered)
-  const logoY    = useRef(new Animated.Value(40)).current;
-  const logoOp   = useRef(new Animated.Value(0)).current;
-  const nameY    = useRef(new Animated.Value(30)).current;
-  const nameOp   = useRef(new Animated.Value(0)).current;
-  const barW     = useRef(new Animated.Value(0)).current;
-  const tagOp    = useRef(new Animated.Value(0)).current;
-  const tagY     = useRef(new Animated.Value(16)).current;
-  const exitOp   = useRef(new Animated.Value(1)).current;
+  const logoY = useRef(new Animated.Value(40)).current;
+  const logoOp = useRef(new Animated.Value(0)).current;
+  const nameY = useRef(new Animated.Value(30)).current;
+  const nameOp = useRef(new Animated.Value(0)).current;
+  const barW = useRef(new Animated.Value(0)).current;
+  const tagOp = useRef(new Animated.Value(0)).current;
+  const tagY = useRef(new Animated.Value(16)).current;
+  const exitOp = useRef(new Animated.Value(1)).current;
 
   const slide = (y, op, delay) => Animated.parallel([
-    Animated.timing(y,  { toValue: 0,   duration: 480, delay, useNativeDriver: true }),
-    Animated.timing(op, { toValue: 1,   duration: 400, delay, useNativeDriver: true }),
+    Animated.timing(y, { toValue: 0, duration: 480, delay, useNativeDriver: true }),
+    Animated.timing(op, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
   ]);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ function SplashScreen({ onDone }) {
     // Tagline fades in after 300ms
     Animated.parallel([
       Animated.timing(tagOp, { toValue: 1, duration: 500, delay: 300, useNativeDriver: true }),
-      Animated.timing(tagY,  { toValue: 0, duration: 500, delay: 300, useNativeDriver: true }),
+      Animated.timing(tagY, { toValue: 0, duration: 500, delay: 300, useNativeDriver: true }),
     ]).start();
 
     // Exit: fade everything out at 2.8s
