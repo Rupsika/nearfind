@@ -217,7 +217,7 @@ export default function HomePortal() {
   return (
     <View style={styles.container}>
       {/* Header Banner */}
-      <LinearGradient colors={['#6366f1', '#4f46e5']} style={styles.header}>
+      <LinearGradient colors={['#22c55e', '#16a34a']} style={styles.header}>
         <View style={styles.headerTopRow}>
           <View>
             <Text style={styles.headerTitle}>NearFind</Text>
@@ -274,11 +274,11 @@ export default function HomePortal() {
           <Text style={styles.sectionTitle}>Shop & Manage Roles</Text>
           <View style={styles.quickNavGrid}>
             <TouchableOpacity
-              style={[styles.quickNavCard, { borderLeftColor: '#4f46e5' }]}
+              style={[styles.quickNavCard, { borderLeftColor: '#16a34a' }]}
               onPress={() => selectRole('customer')}
             >
-              <View style={[styles.quickNavIconBg, { backgroundColor: '#e0e7ff' }]}>
-                <Ionicons name="cart" size={20} color="#4f46e5" />
+              <View style={[styles.quickNavIconBg, { backgroundColor: '#dcfce7' }]}>
+                <Ionicons name="cart" size={20} color="#16a34a" />
               </View>
               <Text style={styles.quickNavLabel}>Go Shopping</Text>
               <Text style={styles.quickNavDesc}>Order food & grocery items</Text>
@@ -344,7 +344,7 @@ export default function HomePortal() {
             
             {isLoading && (
               <View style={styles.loadingBubbleContainer}>
-                <ActivityIndicator size="small" color="#6366f1" style={{ marginRight: 8 }} />
+                <ActivityIndicator size="small" color="#16a34a" style={{ marginRight: 8 }} />
                 <Text style={styles.loadingText}>Searching stores...</Text>
               </View>
             )}
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#e0e7ff',
+    color: '#dcfce7',
     marginTop: 2,
     fontWeight: '500',
   },
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#6366f1',
+    backgroundColor: '#22c55e',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   messageUserBubble: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#16a34a',
     borderBottomRightRadius: 4,
   },
   messageBotBubble: {
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#6366f1',
+    backgroundColor: '#16a34a',
     justifyContent: 'center',
     alignItems: 'center',
   },

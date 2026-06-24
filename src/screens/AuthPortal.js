@@ -89,7 +89,7 @@ export default function AuthPortal() {
   };
 
   return (
-    <LinearGradient colors={['#4f46e5', '#312e81']} style={styles.container}>
+    <LinearGradient colors={['#16a34a', '#14532d']} style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -98,7 +98,7 @@ export default function AuthPortal() {
           {/* Logo Section */}
           <View style={styles.logoSection}>
             <View style={styles.logoCircle}>
-              <Ionicons name="location" size={44} color="#4f46e5" />
+              <Ionicons name="location" size={44} color="#16a34a" />
             </View>
             <Text style={styles.logoText}>NearFind</Text>
             <Text style={styles.logoSubtext}>Hyperlocal role-based commerce</Text>
@@ -263,7 +263,7 @@ export default function AuthPortal() {
                 onPress={() => handleQuickLogin('customer@nearfind.com', 'password')}
                 disabled={isLoading}
               >
-                <Ionicons name="cart" size={18} color="#4f46e5" style={{ marginBottom: 4 }} />
+                <Ionicons name="cart" size={18} color="#16a34a" style={{ marginBottom: 4 }} />
                 <Text style={styles.demoBtnTitle}>Customer</Text>
                 <Text style={styles.demoBtnDesc}>Shop catalog</Text>
               </TouchableOpacity>
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   },
   logoSubtext: {
     fontSize: 12,
-    color: '#c7d2fe',
+    color: '#bbf7d0',
     marginTop: 4,
   },
   authCard: {
@@ -430,8 +430,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   roleTabBtnActive: {
-    backgroundColor: '#4f46e5',
-    borderColor: '#4f46e5',
+    backgroundColor: '#16a34a',
+    borderColor: '#16a34a',
   },
   roleTabLabel: {
     fontSize: 12,
@@ -472,13 +472,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   submitBtn: {
-    backgroundColor: '#4f46e5',
+    backgroundColor: '#16a34a',
     height: 48,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#4f46e5',
+    shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   },
   toggleBtnText: {
     fontSize: 12,
-    color: '#4f46e5',
+    color: '#16a34a',
     fontWeight: '600',
   },
   
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   },
   demoSub: {
     fontSize: 11,
-    color: '#c7d2fe',
+    color: '#bbf7d0',
     textAlign: 'center',
     marginTop: 4,
     marginBottom: 16,

@@ -264,7 +264,7 @@ export default function CustomerPortal() {
 
             {timerMessage && (
               <View style={styles.countdownRow}>
-                <Ionicons name="timer-outline" size={16} color={countdownSecs < 10 ? '#ef4444' : '#4f46e5'} />
+                <Ionicons name="timer-outline" size={16} color={countdownSecs < 10 ? '#ef4444' : '#16a34a'} />
                 <Text style={[styles.countdownText, countdownSecs < 10 && styles.countdownAlert]}>
                   {timerMessage}
                 </Text>
@@ -523,7 +523,7 @@ export default function CustomerPortal() {
   // Render primary product browse list view
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#4f46e5', '#3730a3']} style={styles.topBanner}>
+      <LinearGradient colors={['#16a34a', '#15803d']} style={styles.topBanner}>
         <View style={styles.headerTopRow}>
           <Text style={styles.appTitle}>NearFind</Text>
           <TouchableOpacity onPress={logoutUser} style={styles.logoutBtn}>
@@ -599,7 +599,7 @@ export default function CustomerPortal() {
                     <Ionicons
                       name={opt.icon}
                       size={13}
-                      color={sortBy === opt.id ? '#4f46e5' : '#c7d2fe'}
+                      color={sortBy === opt.id ? '#16a34a' : '#bbf7d0'}
                       style={{ marginRight: 4 }}
                     />
                     <Text
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: '#4f46e5',
+    shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
@@ -782,7 +782,7 @@ const styles = StyleSheet.create({
   },
   appSubtitle: {
     fontSize: 13,
-    color: '#c7d2fe',
+    color: '#bbf7d0',
     marginTop: 4,
     marginBottom: 16,
   },
@@ -842,7 +842,7 @@ const styles = StyleSheet.create({
   productCategory: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6366f1',
+    color: '#16a34a',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -948,7 +948,7 @@ const styles = StyleSheet.create({
   detailCategory: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4f46e5',
+    color: '#16a34a',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -1025,7 +1025,7 @@ const styles = StyleSheet.create({
   retailerPrice: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#4f46e5',
+    color: '#16a34a',
   },
   retailerBottomRow: {
     flexDirection: 'row',
@@ -1078,7 +1078,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   placeOrderBtn: {
-    backgroundColor: '#4f46e5',
+    backgroundColor: '#16a34a',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1107,7 +1107,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(79, 70, 229, 0.1)',
+    borderColor: 'rgba(22, 163, 74, 0.1)',
   },
   statusBannerHeader: {
     flexDirection: 'row',
@@ -1150,7 +1150,7 @@ const styles = StyleSheet.create({
   countdownText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#4f46e5',
+    color: '#16a34a',
     marginLeft: 6,
   },
   countdownAlert: {
@@ -1203,8 +1203,8 @@ const styles = StyleSheet.create({
     borderColor: '#10b981',
   },
   stepDotActive: {
-    borderColor: '#4f46e5',
-    backgroundColor: '#e0e7ff',
+    borderColor: '#16a34a',
+    backgroundColor: '#dcfce7',
   },
   stepDotPending: {
     borderColor: '#cbd5e1',
@@ -1229,7 +1229,7 @@ const styles = StyleSheet.create({
     color: '#0f172a',
   },
   stepNameActiveText: {
-    color: '#4f46e5',
+    color: '#16a34a',
   },
   stepNamePendingText: {
     color: '#94a3b8',
@@ -1242,7 +1242,7 @@ const styles = StyleSheet.create({
   stepTimeActiveLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#818cf8',
+    color: '#22c55e',
     marginTop: 2,
   },
   failedTimeline: {
@@ -1292,7 +1292,7 @@ const styles = StyleSheet.create({
     bottom: 16,
     left: 16,
     right: 16,
-    backgroundColor: '#312e81',
+    backgroundColor: '#14532d',
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -1344,7 +1344,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   colorBlue: {
-    color: '#4f46e5',
+    color: '#16a34a',
   },
   colorGreen: {
     color: '#10b981',
@@ -1369,7 +1369,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   subTabBtnActive: {
-    backgroundColor: '#eef2ff',
+    backgroundColor: '#f0fdf4',
   },
   subTabLabel: {
     fontSize: 13,
@@ -1377,7 +1377,7 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
   subTabLabelActive: {
-    color: '#4f46e5',
+    color: '#16a34a',
     fontWeight: '700',
   },
   orderHistoryCard: {
@@ -1439,7 +1439,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4f46e5',
+    backgroundColor: '#16a34a',
     paddingVertical: 8,
     borderRadius: 8,
     marginBottom: 16,
@@ -1478,8 +1478,8 @@ const styles = StyleSheet.create({
     borderColor: '#10b981',
   },
   historyStepDotActive: {
-    borderColor: '#4f46e5',
-    backgroundColor: '#e0e7ff',
+    borderColor: '#16a34a',
+    backgroundColor: '#dcfce7',
   },
   historyStepDotPending: {
     borderColor: '#cbd5e1',
@@ -1504,7 +1504,7 @@ const styles = StyleSheet.create({
     color: '#0f172a',
   },
   historyStepNameActiveText: {
-    color: '#4f46e5',
+    color: '#16a34a',
   },
   historyStepNamePendingText: {
     color: '#94a3b8',
@@ -1517,7 +1517,7 @@ const styles = StyleSheet.create({
   historyStepTimeActiveLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#818cf8',
+    color: '#22c55e',
     marginTop: 1,
   },
   historyFailedTimeline: {
@@ -1550,10 +1550,10 @@ const styles = StyleSheet.create({
     color: '#ef4444',
   },
   badgeBlue: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#f0fdf4',
   },
   textBlue: {
-    color: '#3b82f6',
+    color: '#16a34a',
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -1587,7 +1587,7 @@ const styles = StyleSheet.create({
     color: '#e2e8f0',
   },
   categoryChipTextActive: {
-    color: '#4f46e5',
+    color: '#16a34a',
     fontWeight: '700',
   },
   sortContainer: {
@@ -1628,7 +1628,7 @@ const styles = StyleSheet.create({
     color: '#cbd5e1',
   },
   sortChipTextActive: {
-    color: '#4f46e5',
+    color: '#16a34a',
     fontWeight: '700',
   },
 });
