@@ -36,10 +36,11 @@ Use the bottom tab bar to switch between roles in real-time. Follow this path to
    * Under the **Active Run** tab, click **Confirm Package Picked Up** once collected.
    * Watch the customer's live 2D route map animate the rider icon.
    * Click **Confirm Package Delivered** once completed.
-5. **Customer Tab (My Orders):**
-   * Expand your delivered order under the **My Orders** sub-tab.
-   * Tap **View Receipt** to inspect the styled digital receipt breakdown, savings notifications, and dynamically generated barcode.
-   * Tap **Buy Again** to instantly refill your active cart with those exact products and navigate back to the checkout tab.
+5. **Customer Tab (Active Tracking & My Orders):**
+   * **Live 2D Map Tracking:** While the order is in progress (Accepted or Picked Up), expand the active order card in the Customer tab to watch a beautifully animated 2D route map tracing the rider's live coordinates moving from the retailer store to the customer destination in real-time.
+   * **Direct Chat with Rider:** Tap the **Chat with Rider** button on the active tracking card. Type and send custom messages to coordinate delivery instructions, and the delivery rider will reply instantly with realistic simulated responses.
+   * **View Receipt:** Once marked as *Delivered*, tap **View Receipt** to inspect the styled digital receipt modal detailing item tables, fees, platform driver payouts, savings highlights, and a dynamically styled barcode.
+   * **Buy Again (One-Tap Reorder):** Tap **Buy Again** to instantly refill your cart with those exact items and navigate back to the checkout tab.
 6. **Admin Tab:** Tap this tab at any point to view system-wide logs, real-time inventory counts (which update dynamically as stock is bought/restored), and chronological status histories with timestamps. Tap the **Reset System Data** button to clear all transactions and reload default stock levels for another walkthrough!
 
 ---
