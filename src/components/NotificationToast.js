@@ -54,22 +54,25 @@ const ToastItem = ({ item, onDismiss }) => {
     switch (item.type) {
       case 'success':
         return {
-          bg: 'rgba(16, 185, 129, 0.95)', // emerald
-          border: '#34d399',
+          bg: 'rgba(15, 23, 42, 0.98)',   // Slate-900
+          border: '#22c55e',              // Green border
           icon: 'checkmark-circle',
+          iconColor: '#22c55e',
         };
       case 'error':
         return {
-          bg: 'rgba(239, 68, 68, 0.95)', // rose/red
-          border: '#f87171',
+          bg: 'rgba(15, 23, 42, 0.98)',   // Slate-900
+          border: '#ef4444',              // Red border
           icon: 'alert-circle',
+          iconColor: '#ef4444',
         };
       case 'info':
       default:
         return {
-          bg: 'rgba(59, 130, 246, 0.95)', // blue
-          border: '#60a5fa',
+          bg: 'rgba(15, 23, 42, 0.98)',   // Slate-900
+          border: '#3b82f6',              // Blue border
           icon: 'information-circle',
+          iconColor: '#3b82f6',
         };
     }
   };
@@ -89,13 +92,13 @@ const ToastItem = ({ item, onDismiss }) => {
       ]}
     >
       <View style={styles.toastContent}>
-        <Ionicons name={theme.icon} size={22} color="#ffffff" style={styles.icon} />
+        <Ionicons name={theme.icon} size={22} color={theme.iconColor} style={styles.icon} />
         <Text style={styles.toastText} numberOfLines={2}>
           {item.message}
         </Text>
       </View>
       <TouchableOpacity onPress={handleDismiss} style={styles.closeButton}>
-        <Ionicons name="close" size={18} color="#ffffff" />
+        <Ionicons name="close" size={18} color="#ffffff" style={{ opacity: 0.6 }} />
       </TouchableOpacity>
     </Animated.View>
   );
