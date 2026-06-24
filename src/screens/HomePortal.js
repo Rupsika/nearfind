@@ -367,7 +367,7 @@ User query: ${textToSend.trim()}`
 
         {/* Call to Action Grid */}
         <View style={styles.quickNavContainer}>
-          <Text style={styles.sectionTitle}>Shop & Manage Roles</Text>
+          <Text style={styles.sectionTitle}>Shop Now</Text>
           <View style={styles.quickNavGrid}>
             <TouchableOpacity
               style={[styles.quickNavCard, { borderLeftColor: '#16a34a' }]}
@@ -376,19 +376,8 @@ User query: ${textToSend.trim()}`
               <View style={[styles.quickNavIconBg, { backgroundColor: '#dcfce7' }]}>
                 <Ionicons name="cart" size={20} color="#16a34a" />
               </View>
-              <Text style={styles.quickNavLabel}>Go Shopping</Text>
-              <Text style={styles.quickNavDesc}>Order food & grocery items</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.quickNavCard, { borderLeftColor: '#10b981' }]}
-              onPress={() => selectRole('retailer')}
-            >
-              <View style={[styles.quickNavIconBg, { backgroundColor: '#dcfce7' }]}>
-                <Ionicons name="storefront" size={20} color="#10b981" />
-              </View>
-              <Text style={styles.quickNavLabel}>Retailer Portal</Text>
-              <Text style={styles.quickNavDesc}>Accept & pack customer orders</Text>
+              <Text style={styles.quickNavLabel}>Start Shopping</Text>
+              <Text style={styles.quickNavDesc}>Browse nearby Kirana store catalogs and place optimized orders</Text>
             </TouchableOpacity>
           </View>
         </View>
