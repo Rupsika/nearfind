@@ -185,6 +185,13 @@ const DEFAULT_ACCOUNTS = [
   { name: 'System Admin', email: 'admin@nearfind.com', password: 'password', role: 'admin' }
 ];
 
+const LOCATION_DISTANCES = {
+  Default: { sharma: 0.5, quick_mart: 1.2, super_save: 2.1 },
+  Downtown: { sharma: 1.8, quick_mart: 0.4, super_save: 1.5 },
+  Suburbs: { sharma: 2.5, quick_mart: 3.1, super_save: 0.6 },
+  'West Side': { sharma: 0.9, quick_mart: 2.2, super_save: 3.8 }
+};
+
 export const AppProvider = ({ children }) => {
   const [products, setProducts] = useState(SEED_PRODUCTS);
   const [orders, setOrders] = useState([]);
@@ -198,6 +205,10 @@ export const AppProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userAccounts, setUserAccounts] = useState(DEFAULT_ACCOUNTS);
 
+  // Cart & Mock Location State
+  const [cart, setCart] = useState([]); // Array of { productId, quantity }
+  const [userLocation, setUserLocation] = useState('Default'); // Default | Downtown | Suburbs | West Side
+
   // Persistence keys
   const PERSIST_KEY_PRODUCTS = '@nearfind_products_v1';
   const PERSIST_KEY_ORDERS = '@nearfind_orders_v1';
@@ -206,6 +217,8 @@ export const AppProvider = ({ children }) => {
   const PERSIST_KEY_TRACKING_ORDER_ID = '@nearfind_tracking_order_id_v1';
   const PERSIST_KEY_USER = '@nearfind_user_v1';
   const PERSIST_KEY_ACCOUNTS = '@nearfind_accounts_v1';
+  const PERSIST_KEY_CART = '@nearfind_cart_v1';
+  const PERSIST_KEY_LOCATION = '@nearfind_location_v1';
 
   // Load state from local storage on mount
   useEffect(() => {
@@ -218,6 +231,11 @@ export const AppProvider = ({ children }) => {
         const storedTrackingOrderId = await AsyncStorage.getItem(PERSIST_KEY_TRACKING_ORDER_ID);
         const storedUser = await AsyncStorage.getItem(PERSIST_KEY_USER);
         const storedAccounts = await AsyncStorage.getItem(PERSIST_KEY_ACCOUNTS);
+        const storedCart = await AsyncStorage.getItem(PERSIST_KEY_CART);
+        const storedLocation = await AsyncStorage.getItem(PERSIST_KEY_LOCATION);
+
+        if (storedCart) setCart(JSON.parse(storedCart));
+        if (storedLocation) setUserLocation(storedLocation);
 
         if (storedProducts) {
           const parsed = JSON.parse(storedProducts);
@@ -334,6 +352,40 @@ export const AppProvider = ({ children }) => {
     }
   }, [trackingOrderId, isLoaded]);
 
+  // Persist cart changes
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(PERSIST_KEY_CART, cart);
+    }
+  }, [cart, isLoaded]);
+
+  // Persist location changes
+  useEffect(() => {
+    if (isLoaded) {
+      AsyncStorage.setItem(PERSIST_KEY_LOCATION, userLocation).catch(() => {});
+    }
+  }, [userLocation, isLoaded]);
+
+  // Handle location-based dynamic distance changes for products
+  useEffect(() => {
+    setProducts((prevProducts) => {
+      const offsets = LOCATION_DISTANCES[userLocation] || LOCATION_DISTANCES.Default;
+      return prevProducts.map((p) => {
+        const updatedRetailers = {};
+        Object.entries(p.retailers).forEach(([id, data]) => {
+          updatedRetailers[id] = {
+            ...data,
+            distance: offsets[id] !== undefined ? offsets[id] : data.distance
+          };
+        });
+        return {
+          ...p,
+          retailers: updatedRetailers
+        };
+      });
+    });
+  }, [userLocation]);
+
   // Toast Notification helper
   const addNotification = useCallback((message, type = 'info') => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
@@ -344,6 +396,132 @@ export const AppProvider = ({ children }) => {
   const dismissNotification = useCallback((id) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
+
+  // Cart operations
+  const addToCart = useCallback((productId, quantity = 1) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.productId === productId);
+      if (existing) {
+        return prev.map((item) =>
+          item.productId === productId
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      }
+      return [...prev, { productId, quantity }];
+    });
+    addNotification('Item added to cart', 'success');
+  }, [addNotification]);
+
+  const removeFromCart = useCallback((productId) => {
+    setCart((prev) => prev.filter((item) => item.productId !== productId));
+    addNotification('Item removed from cart', 'info');
+  }, [addNotification]);
+
+  const updateCartQty = useCallback((productId, quantity) => {
+    if (quantity <= 0) {
+      setCart((prev) => prev.filter((item) => item.productId !== productId));
+    } else {
+      setCart((prev) =>
+        prev.map((item) =>
+          item.productId === productId ? { ...item, quantity } : item
+        )
+      );
+    }
+  }, []);
+
+  const clearCart = useCallback(() => {
+    setCart([]);
+  }, []);
+
+  // Place multi-item optimized cart order
+  const placeCartOrder = useCallback((orderItems) => {
+    let success = false;
+    let placedOrdersList = [];
+    let errors = [];
+
+    setProducts((prevProducts) => {
+      let updatedProducts = [...prevProducts];
+
+      // Check stock first for all items
+      for (const item of orderItems) {
+        const prod = updatedProducts.find((p) => p.id === item.productId);
+        if (!prod) {
+          errors.push(`Product ${item.productId} not found.`);
+          return prevProducts;
+        }
+        const retData = prod.retailers[item.retailerId];
+        if (!retData || retData.stock < item.quantity) {
+          errors.push(`Insufficient stock for ${prod.name} at ${retData ? retData.name : 'selected store'}.`);
+          return prevProducts;
+        }
+      }
+
+      // If all have stock, deduct stock and create order records
+      const newOrders = [];
+      for (const item of orderItems) {
+        const prodIdx = updatedProducts.findIndex((p) => p.id === item.productId);
+        const prod = updatedProducts[prodIdx];
+        const retData = prod.retailers[item.retailerId];
+
+        // Deduct
+        updatedProducts[prodIdx] = {
+          ...prod,
+          retailers: {
+            ...prod.retailers,
+            [item.retailerId]: {
+              ...retData,
+              stock: retData.stock - item.quantity
+            }
+          }
+        };
+
+        // Create order record
+        const orderNum = 1000 + Math.floor(Math.random() * 9000);
+        const newOrder = {
+          id: `NF-${orderNum}`,
+          productId: item.productId,
+          productName: prod.name,
+          retailerId: item.retailerId,
+          retailerName: retData.name,
+          quantity: item.quantity,
+          pricePerUnit: retData.price,
+          totalPrice: retData.price * item.quantity,
+          status: 'Placed',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          retailerTimeoutAt: Date.now() + 30000,
+          deliveryTimeoutAt: null,
+          statusHistory: [{ status: 'Placed', timestamp: Date.now() }]
+        };
+        newOrders.push(newOrder);
+      }
+
+      placedOrdersList = newOrders;
+      success = true;
+      saveToStorage(PERSIST_KEY_PRODUCTS, updatedProducts);
+      return updatedProducts;
+    });
+
+    if (success && placedOrdersList.length > 0) {
+      setOrders((prevOrders) => {
+        const updatedOrders = [...placedOrdersList, ...prevOrders];
+        saveToStorage(PERSIST_KEY_ORDERS, updatedOrders);
+        return updatedOrders;
+      });
+
+      // Clear cart
+      setCart([]);
+
+      // Auto track first order
+      setTrackingOrderId(placedOrdersList[0].id);
+
+      addNotification(`Placed ${placedOrdersList.length} order(s) successfully!`, 'success');
+      return { success: true };
+    }
+
+    return { success: false, error: errors.join('\n') || 'Failed to place orders.' };
+  }, [addNotification]);
 
   // Place a new customer order
   const placeOrder = useCallback((productId, retailerId, quantity) => {
@@ -682,7 +860,15 @@ export const AppProvider = ({ children }) => {
         userAccounts,
         loginUser,
         registerUser,
-        logoutUser
+        logoutUser,
+        cart,
+        userLocation,
+        setUserLocation,
+        addToCart,
+        removeFromCart,
+        updateCartQty,
+        clearCart,
+        placeCartOrder
       }}
     >
       {children}

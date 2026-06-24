@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,8 @@ import {
   Image,
   ScrollView,
   Dimensions,
+  Modal,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,7 +19,25 @@ import { AppContext } from '../context/AppContext';
 const { width } = Dimensions.get('window');
 
 export default function CustomerPortal() {
-  const { products, orders, placeOrder, selectRole, trackingOrderId, setTrackingOrderId, logoutUser } = useContext(AppContext);
+  const {
+    products,
+    orders,
+    placeOrder,
+    selectRole,
+    trackingOrderId,
+    setTrackingOrderId,
+    logoutUser,
+    cart,
+    userLocation,
+    setUserLocation,
+    addToCart,
+    removeFromCart,
+    updateCartQty,
+    clearCart,
+    placeCartOrder,
+    notifications,
+  } = useContext(AppContext);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -26,6 +46,119 @@ export default function CustomerPortal() {
   const [expandedHistoryOrderId, setExpandedHistoryOrderId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('default'); // 'default' | 'nearest' | 'cheapest'
+
+  // Additional states for location, chat, animated rider, and notifications
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  
+  const [bannerNotif, setBannerNotif] = useState(null);
+  const slideAnim = useRef(new Animated.Value(-120)).current;
+  const riderProgress = useRef(new Animated.Value(0)).current;
+
+  // Banner Notification Effect
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const latest = notifications[0];
+      setBannerNotif(latest);
+      
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }).start();
+
+      const timeout = setTimeout(() => {
+        Animated.timing(slideAnim, {
+          toValue: -120,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => {
+          setBannerNotif(null);
+        });
+      }, 3500);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [notifications]);
+
+  // Map Rider Progress Animation Effect
+  const currentTrackingOrder = orders.find((o) => o.id === trackingOrderId);
+
+  useEffect(() => {
+    if (currentTrackingOrder && currentTrackingOrder.status === 'Picked Up') {
+      Animated.timing(riderProgress, {
+        toValue: 1,
+        duration: 12000, // 12 seconds smooth ride simulation
+        useNativeDriver: false,
+      }).start();
+    } else if (currentTrackingOrder && currentTrackingOrder.status === 'Delivered') {
+      riderProgress.setValue(1);
+    } else {
+      riderProgress.setValue(0);
+    }
+  }, [currentTrackingOrder ? currentTrackingOrder.status : null]);
+
+  // Chat message initial seed for tracking
+  useEffect(() => {
+    if (currentTrackingOrder) {
+      setChatMessages([
+        {
+          id: '1',
+          text: `Hello! Thanks for choosing ${currentTrackingOrder.retailerName}. We are processing your order. Let us know if you need anything!`,
+          sender: 'store',
+          time: 'Just now'
+        }
+      ]);
+    }
+  }, [currentTrackingOrder ? currentTrackingOrder.id : null]);
+
+  const handleSendChat = () => {
+    const text = chatInput.trim();
+    if (!text) return;
+    setChatInput('');
+
+    const userMsg = { id: Date.now().toString(), text, sender: 'user', time: 'Just now' };
+    setChatMessages((prev) => [...prev, userMsg]);
+
+    setTimeout(() => {
+      if (!currentTrackingOrder) return;
+      let botResponse = "Thank you for the message. We are on it!";
+      const lower = text.toLowerCase();
+
+      if (['Placed', 'Accepted', 'Packed'].includes(currentTrackingOrder.status)) {
+        if (lower.includes('fresh') || lower.includes('quality')) {
+          botResponse = "Yes, all items are freshly checked and packed!";
+        } else if (lower.includes('cancel') || lower.includes('stop')) {
+          botResponse = "We have already accepted the order, please request support if you need to cancel.";
+        } else if (lower.includes('fast') || lower.includes('hurry') || lower.includes('quick')) {
+          botResponse = "We are packing it as fast as possible. Ready shortly!";
+        } else {
+          botResponse = "Fulfillment is in progress. We'll hand it over to a rider soon.";
+        }
+      } else {
+        if (lower.includes('where') || lower.includes('time') || lower.includes('how long')) {
+          botResponse = "Just crossed the main roundabout. Will arrive in about 3-5 minutes!";
+        } else if (lower.includes('hurry') || lower.includes('fast')) {
+          botResponse = "Riding safely but as fast as I can. See you very soon!";
+        } else if (lower.includes('call') || lower.includes('phone')) {
+          botResponse = "I'm driving right now, will call once I reach your gate.";
+        } else {
+          botResponse = "I have your order and I am navigating to your address.";
+        }
+      }
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: botResponse,
+          sender: currentTrackingOrder.status === 'Picked Up' ? 'rider' : 'store',
+          time: 'Just now'
+        }
+      ]);
+    }, 1500);
+  };
 
   // Filter products by search query and category
   const filteredProducts = products.filter((p) => {
@@ -65,8 +198,6 @@ export default function CustomerPortal() {
   // Show floating pill if the order is active, OR if it's not active but the customer hasn't dismissed it yet
   const showFloatingPill = latestOrder && (isLatestOrderActive || dismissedOrderId !== latestOrder.id);
 
-  const currentTrackingOrder = orders.find((o) => o.id === trackingOrderId);
-
   // Countdown timer local state updating every 100ms for smooth UI ticking
   const [currentTime, setCurrentTime] = useState(Date.now());
   useEffect(() => {
@@ -86,6 +217,409 @@ export default function CustomerPortal() {
     } else {
       alert(res.error || 'Failed to place order.');
     }
+  };
+
+  // Optimization Solver
+  const calculateOptimization = () => {
+    if (cart.length === 0) return null;
+
+    const storeStats = {
+      sharma: { id: 'sharma', name: 'Sharma Kirana Store', totalPrice: 0, itemsAvailable: 0, distance: 0.5, itemsList: [] },
+      quick_mart: { id: 'quick_mart', name: 'Quick Mart', totalPrice: 0, itemsAvailable: 0, distance: 1.2, itemsList: [] },
+      super_save: { id: 'super_save', name: 'Super Save Supermarket', totalPrice: 0, itemsAvailable: 0, distance: 2.1, itemsList: [] }
+    };
+
+    const offsets = {
+      Default: { sharma: 0.5, quick_mart: 1.2, super_save: 2.1 },
+      Downtown: { sharma: 1.8, quick_mart: 0.4, super_save: 1.5 },
+      Suburbs: { sharma: 2.5, quick_mart: 3.1, super_save: 0.6 },
+      'West Side': { sharma: 0.9, quick_mart: 2.2, super_save: 3.8 }
+    }[userLocation] || { sharma: 0.5, quick_mart: 1.2, super_save: 2.1 };
+
+    Object.keys(storeStats).forEach(id => {
+      storeStats[id].distance = offsets[id];
+    });
+
+    cart.forEach(item => {
+      const p = products.find(prod => prod.id === item.productId);
+      if (!p) return;
+
+      Object.keys(storeStats).forEach(storeId => {
+        const rData = p.retailers[storeId];
+        if (rData && rData.stock >= item.quantity) {
+          storeStats[storeId].totalPrice += rData.price * item.quantity;
+          storeStats[storeId].itemsAvailable += 1;
+          storeStats[storeId].itemsList.push({ productId: p.id, name: p.name, price: rData.price, quantity: item.quantity });
+        }
+      });
+    });
+
+    const fullStores = Object.values(storeStats).filter(s => s.itemsAvailable === cart.length);
+
+    let cheapestStore = null;
+    let nearestStore = null;
+
+    if (fullStores.length > 0) {
+      cheapestStore = [...fullStores].sort((a, b) => a.totalPrice - b.totalPrice)[0];
+      nearestStore = [...fullStores].sort((a, b) => a.distance - b.distance)[0];
+    }
+
+    const splitOrders = [];
+    let splitPossible = true;
+    let splitTotalPrice = 0;
+
+    cart.forEach(item => {
+      const p = products.find(prod => prod.id === item.productId);
+      if (!p) {
+        splitPossible = false;
+        return;
+      }
+
+      const options = Object.entries(p.retailers)
+        .map(([storeId, rData]) => ({
+          storeId,
+          ...rData,
+          distance: offsets[storeId]
+        }))
+        .filter(o => o.stock >= item.quantity)
+        .sort((a, b) => a.distance - b.distance);
+
+      if (options.length > 0) {
+        const bestOption = options[0];
+        splitTotalPrice += bestOption.price * item.quantity;
+        splitOrders.push({
+          productId: p.id,
+          productName: p.name,
+          retailerId: bestOption.storeId,
+          retailerName: bestOption.name,
+          quantity: item.quantity,
+          price: bestOption.price,
+          totalPrice: bestOption.price * item.quantity
+        });
+      } else {
+        splitPossible = false;
+      }
+    });
+
+    return {
+      storeStats,
+      cheapestStore,
+      nearestStore,
+      splitOrders,
+      splitPossible,
+      splitTotalPrice
+    };
+  };
+
+  const renderCartTab = () => {
+    if (cart.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="cart-outline" size={60} color="#cbd5e1" />
+          <Text style={styles.emptyText}>Your shopping cart is empty</Text>
+          <TouchableOpacity style={styles.browseBtn} onPress={() => setActiveSubTab('shop')}>
+            <Text style={styles.browseBtnText}>Start Shopping</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    const opt = calculateOptimization();
+    if (!opt) return null;
+
+    const { cheapestStore, nearestStore, splitOrders, splitPossible, splitTotalPrice } = opt;
+    const defaultOption = nearestStore ? 'nearest' : 'split';
+    const [selectedFulfillment, setSelectedFulfillment] = useState(defaultOption);
+
+    const handleCheckout = async () => {
+      let itemsToOrder = [];
+      if (selectedFulfillment === 'cheapest' && cheapestStore) {
+        itemsToOrder = cart.map(item => ({
+          productId: item.productId,
+          retailerId: cheapestStore.id,
+          quantity: item.quantity
+        }));
+      } else if (selectedFulfillment === 'nearest' && nearestStore) {
+        itemsToOrder = cart.map(item => ({
+          productId: item.productId,
+          retailerId: nearestStore.id,
+          quantity: item.quantity
+        }));
+      } else if (selectedFulfillment === 'split' && splitPossible) {
+        itemsToOrder = splitOrders.map(item => ({
+          productId: item.productId,
+          retailerId: item.retailerId,
+          quantity: item.quantity
+        }));
+      }
+
+      if (itemsToOrder.length === 0) {
+        alert('Invalid fulfillment option selected.');
+        return;
+      }
+
+      const res = placeCartOrder(itemsToOrder);
+      if (res.success) {
+        setActiveSubTab('orders');
+      } else {
+        alert(res.error || 'Failed to place cart order.');
+      }
+    };
+
+    return (
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.cartContainer}>
+        <Text style={styles.cartSectionTitle}>Items in Cart</Text>
+        
+        {cart.map((item) => {
+          const prod = products.find(p => p.id === item.productId);
+          if (!prod) return null;
+
+          return (
+            <View key={item.productId} style={styles.cartItemCard}>
+              <View style={styles.cartItemLeft}>
+                <Text style={styles.cartItemName}>{prod.name}</Text>
+                <Text style={styles.cartItemCategory}>{prod.category}</Text>
+              </View>
+              
+              <View style={styles.cartItemActions}>
+                <View style={styles.qtyContainer}>
+                  <TouchableOpacity
+                    style={styles.qtyBtn}
+                    onPress={() => updateCartQty(item.productId, item.quantity - 1)}
+                  >
+                    <Ionicons name="remove" size={14} color="#475569" />
+                  </TouchableOpacity>
+                  <Text style={styles.qtyText}>{item.quantity}</Text>
+                  <TouchableOpacity
+                    style={styles.qtyBtn}
+                    onPress={() => {
+                      const maxStock = Math.max(...Object.values(prod.retailers).map(r => r.stock));
+                      updateCartQty(item.productId, Math.min(maxStock, item.quantity + 1));
+                    }}
+                  >
+                    <Ionicons name="add" size={14} color="#475569" />
+                  </TouchableOpacity>
+                </View>
+                
+                <TouchableOpacity
+                  style={styles.cartDeleteBtn}
+                  onPress={() => removeFromCart(item.productId)}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })}
+
+        <Text style={styles.cartSectionTitle}>Smart Fulfillment Options</Text>
+        <Text style={styles.cartSectionSub}>Optimized for cost, speed, or stock matching</Text>
+
+        {nearestStore ? (
+          <TouchableOpacity
+            style={[
+              styles.optCard,
+              selectedFulfillment === 'nearest' && styles.optCardActive
+            ]}
+            onPress={() => setSelectedFulfillment('nearest')}
+          >
+            <View style={styles.optRadioCol}>
+              <Ionicons
+                name={selectedFulfillment === 'nearest' ? 'checkmark-circle' : 'ellipse-outline'}
+                size={20}
+                color={selectedFulfillment === 'nearest' ? '#16a34a' : '#94a3b8'}
+              />
+            </View>
+            <View style={styles.optContentCol}>
+              <View style={styles.optBadgeRow}>
+                <Text style={styles.optStoreName}>{nearestStore.name}</Text>
+                <View style={[styles.badgePill, { backgroundColor: '#dcfce7' }]}>
+                  <Text style={[styles.badgePillTxt, { color: '#15803d' }]}>Fastest</Text>
+                </View>
+              </View>
+              <Text style={styles.optMeta}>
+                Fulfill entire cart • {nearestStore.distance} km away
+              </Text>
+              <Text style={styles.optPrice}>₹{nearestStore.totalPrice}</Text>
+            </View>
+          </TouchableOpacity>
+        ) : null}
+
+        {cheapestStore ? (
+          <TouchableOpacity
+            style={[
+              styles.optCard,
+              selectedFulfillment === 'cheapest' && styles.optCardActive
+            ]}
+            onPress={() => setSelectedFulfillment('cheapest')}
+          >
+            <View style={styles.optRadioCol}>
+              <Ionicons
+                name={selectedFulfillment === 'cheapest' ? 'checkmark-circle' : 'ellipse-outline'}
+                size={20}
+                color={selectedFulfillment === 'cheapest' ? '#16a34a' : '#94a3b8'}
+              />
+            </View>
+            <View style={styles.optContentCol}>
+              <View style={styles.optBadgeRow}>
+                <Text style={styles.optStoreName}>{cheapestStore.name}</Text>
+                <View style={[styles.badgePill, { backgroundColor: '#fef3c7' }]}>
+                  <Text style={[styles.badgePillTxt, { color: '#b45309' }]}>Cheapest</Text>
+                </View>
+              </View>
+              <Text style={styles.optMeta}>
+                Fulfill entire cart • {cheapestStore.distance} km away
+              </Text>
+              <Text style={styles.optPrice}>₹{cheapestStore.totalPrice}</Text>
+            </View>
+          </TouchableOpacity>
+        ) : null}
+
+        {splitPossible ? (
+          <TouchableOpacity
+            style={[
+              styles.optCard,
+              selectedFulfillment === 'split' && styles.optCardActive
+            ]}
+            onPress={() => setSelectedFulfillment('split')}
+          >
+            <View style={styles.optRadioCol}>
+              <Ionicons
+                name={selectedFulfillment === 'split' ? 'checkmark-circle' : 'ellipse-outline'}
+                size={20}
+                color={selectedFulfillment === 'split' ? '#16a34a' : '#94a3b8'}
+              />
+            </View>
+            <View style={styles.optContentCol}>
+              <View style={styles.optBadgeRow}>
+                <Text style={styles.optStoreName}>Smart Split Delivery</Text>
+                <View style={[styles.badgePill, { backgroundColor: '#e0f2fe' }]}>
+                  <Text style={[styles.badgePillTxt, { color: '#0369a1' }]}>Guaranteed Stock</Text>
+                </View>
+              </View>
+              <Text style={styles.optMeta}>
+                Split order across {new Set(splitOrders.map(s => s.retailerId)).size} nearest carrying stores
+              </Text>
+              <View style={styles.splitBreakdown}>
+                {splitOrders.map((sItem, index) => (
+                  <Text key={index} style={styles.splitBreakdownTxt}>
+                    • {sItem.productName} ({sItem.quantity}x) from {sItem.retailerName} (₹{sItem.totalPrice})
+                  </Text>
+                ))}
+              </View>
+              <Text style={styles.optPrice}>Total: ₹{splitTotalPrice}</Text>
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.splitDisabledCard}>
+            <Ionicons name="warning-outline" size={16} color="#ef4444" style={{ marginRight: 6 }} />
+            <Text style={styles.splitDisabledTxt}>Some items are completely out of stock across all stores.</Text>
+          </View>
+        )}
+
+        <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
+          <Text style={styles.checkoutBtnTxt}>Place Optimized Order</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  };
+
+  const renderTrackingMap = (order) => {
+    const leftPos = riderProgress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [30, width - 32 - 70],
+    });
+
+    return (
+      <View style={styles.mapContainer}>
+        <Text style={styles.mapTitle}>Live Delivery Route</Text>
+        <View style={styles.mapBox}>
+          <View style={styles.roadLine} />
+
+          <View style={[styles.mapNode, { left: 20 }]}>
+            <View style={styles.mapNodeIconBgStore}>
+              <Ionicons name="storefront" size={16} color="#ffffff" />
+            </View>
+            <Text style={styles.mapNodeLabel}>Store</Text>
+          </View>
+
+          <View style={[styles.mapNode, { right: 20 }]}>
+            <View style={styles.mapNodeIconBgHome}>
+              <Ionicons name="home" size={16} color="#ffffff" />
+            </View>
+            <Text style={styles.mapNodeLabel}>Home</Text>
+          </View>
+
+          <Animated.View style={[styles.mapRiderNode, { left: leftPos }]}>
+            <View style={styles.mapNodeIconBgRider}>
+              <Ionicons name="bicycle" size={16} color="#ffffff" />
+            </View>
+            <Text style={styles.mapRiderLabel}>Rider</Text>
+          </Animated.View>
+        </View>
+        <Text style={styles.mapStatusFooter}>
+          {order.status === 'Picked Up'
+            ? 'Rider is on the way to your address!'
+            : order.status === 'Delivered'
+              ? 'Delivery complete!'
+              : 'Waiting for rider pickup...'}
+        </Text>
+      </View>
+    );
+  };
+
+  const renderTrackingChat = (order) => {
+    return (
+      <View style={styles.trackingChatBox}>
+        <Text style={styles.chatTitle}>Direct Store / Rider Chat</Text>
+        <View style={styles.chatLogsContainer}>
+          <ScrollView
+            style={styles.chatLogsSub}
+            contentContainerStyle={{ padding: 10 }}
+            nestedScrollEnabled
+          >
+            {chatMessages.map((m) => {
+              const isUser = m.sender === 'user';
+              return (
+                <View
+                  key={m.id}
+                  style={[
+                    styles.chatMsgRow,
+                    isUser ? styles.chatMsgRowUser : styles.chatMsgRowStore
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.chatMsgBubble,
+                      isUser ? styles.chatMsgBubbleUser : styles.chatMsgBubbleStore
+                    ]}
+                  >
+                    <Text style={styles.chatMsgSenderLabel}>
+                      {isUser ? 'You' : m.sender === 'rider' ? 'Delivery Partner' : order.retailerName}
+                    </Text>
+                    <Text style={[styles.chatMsgTxt, isUser && styles.chatMsgTxtUser]}>{m.text}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        <View style={styles.chatInputBar}>
+          <TextInput
+            value={chatInput}
+            onChangeText={setChatInput}
+            placeholder="Type message..."
+            placeholderTextColor="#94a3b8"
+            style={styles.chatTextInput}
+            onSubmitEditing={handleSendChat}
+          />
+          <TouchableOpacity style={styles.chatSendBtn} onPress={handleSendChat}>
+            <Ionicons name="send" size={14} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   };
 
   // Render product detail comparison view
@@ -356,6 +890,12 @@ export default function CustomerPortal() {
             </View>
           )}
 
+          {/* Visual 2D Route Tracking Map */}
+          {!isFailed && renderTrackingMap(o)}
+
+          {/* Direct Chat Console */}
+          {!isFailed && renderTrackingChat(o)}
+
           <TouchableOpacity style={styles.shopMoreBtn} onPress={() => setTrackingOrderId(null)}>
             <Text style={styles.shopMoreBtnText}>Back to Product List</Text>
           </TouchableOpacity>
@@ -523,9 +1063,91 @@ export default function CustomerPortal() {
   // Render primary product browse list view
   return (
     <View style={styles.container}>
+      {/* Slide-Down Notification Banner */}
+      {bannerNotif && (
+        <Animated.View
+          style={[
+            styles.notifBanner,
+            { transform: [{ translateY: slideAnim }] },
+            bannerNotif.type === 'error' && styles.notifBannerError,
+            bannerNotif.type === 'success' && styles.notifBannerSuccess
+          ]}
+        >
+          <Ionicons
+            name={
+              bannerNotif.type === 'error'
+                ? 'alert-circle'
+                : bannerNotif.type === 'success'
+                  ? 'checkmark-circle'
+                  : 'information-circle'
+            }
+            size={20}
+            color="#ffffff"
+            style={{ marginRight: 10 }}
+          />
+          <Text style={styles.notifBannerTxt}>{bannerNotif.message}</Text>
+        </Animated.View>
+      )}
+
+      {/* Location Picker Modal */}
+      <Modal
+        visible={isLocationModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsLocationModalOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsLocationModalOpen(false)}
+        >
+          <View style={styles.locationModalContent}>
+            <Text style={styles.locationModalTitle}>Select Neighborhood</Text>
+            <Text style={styles.locationModalSub}>Store distances will adjust dynamically</Text>
+            {['Default', 'Downtown', 'Suburbs', 'West Side'].map((loc) => (
+              <TouchableOpacity
+                key={loc}
+                style={[
+                  styles.locationModalItem,
+                  userLocation === loc && styles.locationModalItemActive
+                ]}
+                onPress={() => {
+                  setUserLocation(loc);
+                  setIsLocationModalOpen(false);
+                }}
+              >
+                <Ionicons
+                  name={userLocation === loc ? 'radio-button-on' : 'radio-button-off'}
+                  size={18}
+                  color={userLocation === loc ? '#16a34a' : '#64748b'}
+                  style={{ marginRight: 10 }}
+                />
+                <Text style={[
+                  styles.locationModalText,
+                  userLocation === loc && styles.locationModalTextActive
+                ]}>
+                  {loc} {loc === 'Default' ? '(Sharma closest)' : loc === 'Downtown' ? '(Quick Mart closest)' : loc === 'Suburbs' ? '(Super Save closest)' : ''}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       <LinearGradient colors={['#16a34a', '#15803d']} style={styles.topBanner}>
         <View style={styles.headerTopRow}>
-          <Text style={styles.appTitle}>NearFind</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.appTitle}>NearFind</Text>
+            <TouchableOpacity
+              onPress={() => setIsLocationModalOpen(true)}
+              style={styles.locationHeaderBtn}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="location" size={14} color="#bbf7d0" />
+              <Text style={styles.locationHeaderTxt}>{userLocation}</Text>
+              <Ionicons name="chevron-down" size={12} color="#bbf7d0" style={{ marginLeft: 2 }} />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity onPress={logoutUser} style={styles.logoutBtn}>
             <Ionicons name="log-out-outline" size={20} color="#ffffff" />
           </TouchableOpacity>
@@ -630,6 +1252,15 @@ export default function CustomerPortal() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          onPress={() => setActiveSubTab('cart')}
+          style={[styles.subTabBtn, activeSubTab === 'cart' && styles.subTabBtnActive]}
+        >
+          <Text style={[styles.subTabLabel, activeSubTab === 'cart' && styles.subTabLabelActive]}>
+            Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={() => setActiveSubTab('orders')}
           style={[styles.subTabBtn, activeSubTab === 'orders' && styles.subTabBtnActive]}
         >
@@ -655,6 +1286,7 @@ export default function CustomerPortal() {
             const storesWithStock = Object.values(item.retailers).filter((r) => r.stock > 0).length;
             const totalStores = Object.keys(item.retailers).length;
             const bestPrice = Math.min(...Object.values(item.retailers).map((r) => r.price));
+            const cartItem = cart.find(c => c.productId === item.id);
 
             return (
               <TouchableOpacity
@@ -677,16 +1309,63 @@ export default function CustomerPortal() {
                         storesWithStock > 0 ? styles.dotGreen : styles.dotRed
                       ]} />
                       <Text style={styles.availabilityText}>
-                        {storesWithStock > 0 ? `${storesWithStock}/${totalStores} stores in stock` : 'Out of stock'}
+                        {storesWithStock > 0 ? `${storesWithStock}/${totalStores} stores` : 'Out of stock'}
                       </Text>
                     </View>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#cbd5e1" style={styles.arrowIcon} />
+
+                {/* Inline Cart Controls */}
+                {storesWithStock > 0 ? (
+                  cartItem ? (
+                    <View
+                      style={styles.inlineQtyContainer}
+                      onStartShouldSetResponder={() => true}
+                      onTouchEnd={(e) => e.stopPropagation()}
+                    >
+                      <TouchableOpacity
+                        style={styles.inlineQtyBtn}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          updateCartQty(item.id, cartItem.quantity - 1);
+                        }}
+                      >
+                        <Ionicons name="remove" size={12} color="#16a34a" />
+                      </TouchableOpacity>
+                      <Text style={styles.inlineQtyText}>{cartItem.quantity}</Text>
+                      <TouchableOpacity
+                        style={styles.inlineQtyBtn}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          const maxStock = Math.max(...Object.values(item.retailers).map(r => r.stock));
+                          updateCartQty(item.id, Math.min(maxStock, cartItem.quantity + 1));
+                        }}
+                      >
+                        <Ionicons name="add" size={12} color="#16a34a" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.inlineAddBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        addToCart(item.id, 1);
+                      }}
+                    >
+                      <Text style={inlineAddBtnTxt => styles.inlineAddBtnTxt}>+ Add</Text>
+                    </TouchableOpacity>
+                  )
+                ) : (
+                  <View style={styles.inlineOosBadge}>
+                    <Text style={styles.inlineOosTxt}>OOS</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             );
           }}
         />
+      ) : activeSubTab === 'cart' ? (
+        renderCartTab()
       ) : (
         <FlatList
           data={orders}
@@ -1589,6 +2268,470 @@ const styles = StyleSheet.create({
   categoryChipTextActive: {
     color: '#16a34a',
     fontWeight: '700',
+  },
+  sortChipTextActive: {
+    color: '#16a34a',
+    fontWeight: '700',
+  },
+  locationHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  locationHeaderTxt: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 4,
+    marginRight: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  locationModalContent: {
+    width: width - 64,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  locationModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  locationModalSub: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  locationModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginBottom: 6,
+  },
+  locationModalItemActive: {
+    backgroundColor: '#f0fdf4',
+  },
+  locationModalText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  locationModalTextActive: {
+    color: '#16a34a',
+    fontWeight: '700',
+  },
+  inlineAddBtn: {
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#16a34a',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineAddBtnTxt: {
+    color: '#16a34a',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  inlineQtyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#16a34a',
+    borderRadius: 8,
+    padding: 2,
+  },
+  inlineQtyBtn: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inlineQtyText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#16a34a',
+    paddingHorizontal: 6,
+  },
+  inlineOosBadge: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  inlineOosTxt: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  cartContainer: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  cartSectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  cartSectionSub: {
+    fontSize: 12,
+    color: '#64748b',
+    marginBottom: 16,
+  },
+  cartItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  cartItemLeft: {
+    flex: 1,
+    marginRight: 10,
+  },
+  cartItemName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  cartItemCategory: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  cartItemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cartDeleteBtn: {
+    marginLeft: 12,
+    padding: 6,
+  },
+  optCard: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+  },
+  optCardActive: {
+    borderColor: '#16a34a',
+    backgroundColor: '#f0fdf4',
+  },
+  optRadioCol: {
+    marginRight: 12,
+    justifyContent: 'center',
+  },
+  optContentCol: {
+    flex: 1,
+  },
+  optBadgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  optStoreName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  badgePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  badgePillTxt: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  optMeta: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 4,
+  },
+  optPrice: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#16a34a',
+    marginTop: 8,
+  },
+  splitBreakdown: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  splitBreakdownTxt: {
+    fontSize: 11,
+    color: '#475569',
+    lineHeight: 15,
+  },
+  splitDisabledCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fee2e2',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  splitDisabledTxt: {
+    fontSize: 12,
+    color: '#ef4444',
+    fontWeight: '500',
+  },
+  checkoutBtn: {
+    backgroundColor: '#16a34a',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  checkoutBtnTxt: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  browseBtn: {
+    backgroundColor: '#16a34a',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 16,
+  },
+  browseBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  notifBanner: {
+    position: 'absolute',
+    top: 50,
+    left: 16,
+    right: 16,
+    backgroundColor: '#3b82f6',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 10,
+    zIndex: 9999,
+  },
+  notifBannerError: {
+    backgroundColor: '#ef4444',
+  },
+  notifBannerSuccess: {
+    backgroundColor: '#16a34a',
+  },
+  notifBannerTxt: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+    flex: 1,
+  },
+  mapContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 16,
+  },
+  mapTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#475569',
+    marginBottom: 12,
+  },
+  mapBox: {
+    height: 100,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    position: 'relative',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  roadLine: {
+    position: 'absolute',
+    left: 45,
+    right: 45,
+    height: 4,
+    borderStyle: 'dashed',
+    borderWidth: 1.5,
+    borderColor: '#94a3b8',
+    borderRadius: 1,
+  },
+  mapNode: {
+    position: 'absolute',
+    alignItems: 'center',
+    width: 60,
+  },
+  mapNodeIconBgStore: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#16a34a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  mapNodeIconBgHome: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#0f172a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  mapNodeLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748b',
+    marginTop: 4,
+  },
+  mapRiderNode: {
+    position: 'absolute',
+    alignItems: 'center',
+    width: 60,
+    top: 20,
+  },
+  mapNodeIconBgRider: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fbbf24',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  mapRiderLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#fbbf24',
+    marginTop: 2,
+  },
+  mapStatusFooter: {
+    fontSize: 12,
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '600',
+  },
+  trackingChatBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 14,
+    marginBottom: 20,
+  },
+  chatLogsContainer: {
+    height: 180,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  chatLogsSub: {
+    flex: 1,
+  },
+  chatMsgRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  chatMsgRowUser: {
+    justifyContent: 'flex-end',
+  },
+  chatMsgRowStore: {
+    justifyContent: 'flex-start',
+  },
+  chatMsgBubble: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    maxWidth: '85%',
+  },
+  chatMsgBubbleUser: {
+    backgroundColor: '#16a34a',
+    borderBottomRightRadius: 2,
+  },
+  chatMsgBubbleStore: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderBottomLeftRadius: 2,
+  },
+  chatMsgSenderLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#64748b',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+  },
+  chatMsgTxt: {
+    fontSize: 12,
+    color: '#334155',
+    lineHeight: 16,
+  },
+  chatMsgTxtUser: {
+    color: '#ffffff',
+  },
+  chatSendBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#16a34a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   sortContainer: {
     flexDirection: 'row',
