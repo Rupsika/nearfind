@@ -45,3 +45,9 @@ yarn-error.*
 
 # IDE configuration
 .idea/
+
+# AI Agent configuration
+CLAUDE.md
+AGENTS.md
+.claude/
+
