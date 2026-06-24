@@ -192,6 +192,14 @@ export default function AuthPortal() {
                     <Ionicons name="bicycle" size={16} color={role === 'delivery' ? '#ffffff' : '#64748b'} />
                     <Text style={[styles.roleTabLabel, role === 'delivery' && styles.roleTabLabelActive]}>Rider</Text>
                   </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.roleTabBtn, role === 'admin' && styles.roleTabBtnActive]}
+                    onPress={() => setRole('admin')}
+                  >
+                    <Ionicons name="shield-checkmark" size={16} color={role === 'admin' ? '#ffffff' : '#64748b'} />
+                    <Text style={[styles.roleTabLabel, role === 'admin' && styles.roleTabLabelActive]}>Admin</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {role === 'retailer' && (
@@ -415,10 +423,11 @@ const styles = StyleSheet.create({
   },
   roleTabsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   roleTabBtn: {
-    flex: 1,
+    width: (width - 48 - 8) / 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -924,18 +924,6 @@ export default function CustomerPortal() {
             )}
           </LinearGradient>
 
-          {/* Role switcher alert helper */}
-          {!isCompleted && !isFailed && (
-            <View style={styles.instructionBanner}>
-              <Ionicons name="bulb-outline" size={18} color="#0284c7" style={{ marginRight: 6 }} />
-              <Text style={styles.instructionText}>
-                {o.status === 'Placed' && `Tap the 'Retailer' tab at the bottom to accept/reject this order as Sharma Kirana.`}
-                {['Accepted', 'Packed'].includes(o.status) && `Go to the 'Retailer' tab to mark the order Packed and Ready.`}
-                {o.status === 'Ready for Pickup' && `Tap the 'Delivery' tab at the bottom to accept and pick up the order as a delivery partner.`}
-                {o.status === 'Picked Up' && `Go to the 'Delivery' tab to mark the order as Delivered.`}
-              </Text>
-            </View>
-          )}
 
           {/* Stepper Layout */}
           {!isFailed ? (
