@@ -208,6 +208,7 @@ export const AppProvider = ({ children }) => {
   // Cart & Mock Location State
   const [cart, setCart] = useState([]); // Array of { productId, quantity }
   const [userLocation, setUserLocation] = useState('Default'); // Default | Downtown | Suburbs | West Side
+  const [favorites, setFavorites] = useState([]); // Array of product IDs
 
   // Persistence keys
   const PERSIST_KEY_PRODUCTS = '@nearfind_products_v1';
@@ -219,6 +220,7 @@ export const AppProvider = ({ children }) => {
   const PERSIST_KEY_ACCOUNTS = '@nearfind_accounts_v1';
   const PERSIST_KEY_CART = '@nearfind_cart_v1';
   const PERSIST_KEY_LOCATION = '@nearfind_location_v1';
+  const PERSIST_KEY_FAVORITES = '@nearfind_favorites_v1';
 
   // Load state from local storage on mount
   useEffect(() => {
@@ -233,9 +235,11 @@ export const AppProvider = ({ children }) => {
         const storedAccounts = await AsyncStorage.getItem(PERSIST_KEY_ACCOUNTS);
         const storedCart = await AsyncStorage.getItem(PERSIST_KEY_CART);
         const storedLocation = await AsyncStorage.getItem(PERSIST_KEY_LOCATION);
+        const storedFavorites = await AsyncStorage.getItem(PERSIST_KEY_FAVORITES);
 
         if (storedCart) setCart(JSON.parse(storedCart));
         if (storedLocation) setUserLocation(storedLocation);
+        if (storedFavorites) setFavorites(JSON.parse(storedFavorites));
 
         if (storedProducts) {
           const parsed = JSON.parse(storedProducts);
@@ -366,6 +370,13 @@ export const AppProvider = ({ children }) => {
     }
   }, [userLocation, isLoaded]);
 
+  // Persist favorites changes
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(PERSIST_KEY_FAVORITES, favorites);
+    }
+  }, [favorites, isLoaded]);
+
   // Handle location-based dynamic distance changes for products
   useEffect(() => {
     setProducts((prevProducts) => {
@@ -434,8 +445,21 @@ export const AppProvider = ({ children }) => {
     setCart([]);
   }, []);
 
+  // Favorites operations
+  const toggleFavorite = useCallback((productId) => {
+    setFavorites((prev) => {
+      const isFav = prev.includes(productId);
+      if (isFav) {
+        addNotification('Removed from Favorites', 'info');
+        return prev.filter((id) => id !== productId);
+      }
+      addNotification('Added to Favorites', 'success');
+      return [...prev, productId];
+    });
+  }, [addNotification]);
+
   // Place multi-item optimized cart order
-  const placeCartOrder = useCallback((orderItems) => {
+  const placeCartOrder = useCallback((orderItems, deliverySlot = 'Deliver Now') => {
     let success = false;
     let placedOrdersList = [];
     let errors = [];
@@ -492,6 +516,7 @@ export const AppProvider = ({ children }) => {
           updatedAt: Date.now(),
           retailerTimeoutAt: Date.now() + 30000,
           deliveryTimeoutAt: null,
+          deliverySlot,
           statusHistory: [{ status: 'Placed', timestamp: Date.now() }]
         };
         newOrders.push(newOrder);
@@ -524,7 +549,7 @@ export const AppProvider = ({ children }) => {
   }, [addNotification]);
 
   // Place a new customer order
-  const placeOrder = useCallback((productId, retailerId, quantity) => {
+  const placeOrder = useCallback((productId, retailerId, quantity, deliverySlot = 'Deliver Now') => {
     let success = false;
     let newOrder = null;
 
@@ -570,6 +595,7 @@ export const AppProvider = ({ children }) => {
         updatedAt: Date.now(),
         retailerTimeoutAt: Date.now() + 30000, // 30 seconds to accept
         deliveryTimeoutAt: null,
+        deliverySlot,
         statusHistory: [{ status: 'Placed', timestamp: Date.now() }]
       };
 
@@ -868,7 +894,9 @@ export const AppProvider = ({ children }) => {
         removeFromCart,
         updateCartQty,
         clearCart,
-        placeCartOrder
+        placeCartOrder,
+        favorites,
+        toggleFavorite
       }}
     >
       {children}

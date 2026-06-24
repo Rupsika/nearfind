@@ -36,6 +36,8 @@ export default function CustomerPortal() {
     clearCart,
     placeCartOrder,
     notifications,
+    favorites = [],
+    toggleFavorite,
   } = useContext(AppContext);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,6 +48,9 @@ export default function CustomerPortal() {
   const [expandedHistoryOrderId, setExpandedHistoryOrderId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('default'); // 'default' | 'nearest' | 'cheapest'
+  const [deliveryType, setDeliveryType] = useState('now'); // 'now' | 'scheduled'
+  const [selectedSlot, setSelectedSlot] = useState('4:00 PM - 6:00 PM');
+  const [selectedReceiptOrder, setSelectedReceiptOrder] = useState(null);
 
   // Additional states for location, chat, animated rider, and notifications
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -164,7 +169,14 @@ export default function CustomerPortal() {
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           p.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    let matchesCategory = false;
+    if (selectedCategory === 'All') {
+      matchesCategory = true;
+    } else if (selectedCategory === 'Favorites') {
+      matchesCategory = (favorites || []).includes(p.id);
+    } else {
+      matchesCategory = p.category === selectedCategory;
+    }
     return matchesSearch && matchesCategory;
   });
 
@@ -206,6 +218,18 @@ export default function CustomerPortal() {
     }, 200);
     return () => clearInterval(timer);
   }, []);
+
+  // One-tap reorder
+  const handleBuyAgain = (order) => {
+    clearCart();
+    const itemsToAdd = order.items && order.items.length > 0
+      ? order.items
+      : [{ productId: order.productId, quantity: order.quantity }];
+    itemsToAdd.forEach((itm) => {
+      addToCart(itm.productId, itm.quantity);
+    });
+    setActiveSubTab('cart');
+  };
 
   // Place order wrapper
   const handlePlaceOrder = (productId, retailerId) => {
@@ -358,7 +382,8 @@ export default function CustomerPortal() {
         return;
       }
 
-      const res = placeCartOrder(itemsToOrder);
+      const chosenSlot = deliveryType === 'now' ? 'Deliver Now' : `Scheduled: ${selectedSlot}`;
+      const res = placeCartOrder(itemsToOrder, chosenSlot);
       if (res.success) {
         setActiveSubTab('orders');
       } else {
@@ -514,6 +539,86 @@ export default function CustomerPortal() {
           <View style={styles.splitDisabledCard}>
             <Ionicons name="warning-outline" size={16} color="#ef4444" style={{ marginRight: 6 }} />
             <Text style={styles.splitDisabledTxt}>Some items are completely out of stock across all stores.</Text>
+          </View>
+        )}
+
+        {/* Delivery Scheduler Section */}
+        <Text style={styles.cartSectionTitle}>Delivery Schedule</Text>
+        <Text style={styles.cartSectionSub}>Select your preferred delivery slot</Text>
+
+        <View style={styles.schedulerTypeRow}>
+          <TouchableOpacity
+            style={[
+              styles.schedulerTypeCard,
+              deliveryType === 'now' && styles.schedulerTypeCardActive
+            ]}
+            onPress={() => setDeliveryType('now')}
+          >
+            <Ionicons
+              name="flash-outline"
+              size={20}
+              color={deliveryType === 'now' ? '#16a34a' : '#64748b'}
+            />
+            <Text style={[
+              styles.schedulerTypeLabel,
+              deliveryType === 'now' && styles.schedulerTypeLabelActive
+            ]}>
+              Deliver Now
+            </Text>
+            <Text style={styles.schedulerTypeSub}>
+              Under 20 mins
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.schedulerTypeCard,
+              deliveryType === 'scheduled' && styles.schedulerTypeCardActive
+            ]}
+            onPress={() => setDeliveryType('scheduled')}
+          >
+            <Ionicons
+              name="time-outline"
+              size={20}
+              color={deliveryType === 'scheduled' ? '#16a34a' : '#64748b'}
+            />
+            <Text style={[
+              styles.schedulerTypeLabel,
+              deliveryType === 'scheduled' && styles.schedulerTypeLabelActive
+            ]}>
+              Schedule Later
+            </Text>
+            <Text style={styles.schedulerTypeSub}>
+              Pick a time slot
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {deliveryType === 'scheduled' && (
+          <View style={styles.slotsWrapper}>
+            {['4:00 PM - 6:00 PM', '6:00 PM - 8:00 PM', '8:00 PM - 10:00 PM'].map((slot) => (
+              <TouchableOpacity
+                key={slot}
+                style={[
+                  styles.slotChip,
+                  selectedSlot === slot && styles.slotChipActive
+                ]}
+                onPress={() => setSelectedSlot(slot)}
+              >
+                <Ionicons
+                  name="alarm-outline"
+                  size={14}
+                  color={selectedSlot === slot ? '#ffffff' : '#64748b'}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={[
+                  styles.slotChipText,
+                  selectedSlot === slot && styles.slotChipTextActive
+                ]}>
+                  {slot}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
@@ -796,6 +901,13 @@ export default function CustomerPortal() {
             <Text style={styles.statusBannerSub}>From {o.retailerName}</Text>
             <Text style={styles.statusBannerItem}>{o.quantity}x {o.productName} • ₹{o.totalPrice}</Text>
 
+            {o.deliverySlot && o.deliverySlot !== 'Deliver Now' && (
+              <View style={styles.trackingSlotRow}>
+                <Ionicons name="calendar-outline" size={14} color="#16a34a" style={{ marginRight: 6 }} />
+                <Text style={styles.trackingSlotText}>{o.deliverySlot}</Text>
+              </View>
+            )}
+
             {timerMessage && (
               <View style={styles.countdownRow}>
                 <Ionicons name="timer-outline" size={16} color={countdownSecs < 10 ? '#ef4444' : '#16a34a'} />
@@ -956,7 +1068,7 @@ export default function CustomerPortal() {
             </View>
             <Text style={styles.orderHistoryProductText}>{item.quantity}x {item.productName}</Text>
             <Text style={styles.orderHistoryMeta}>
-              From {item.retailerName} • ₹{item.totalPrice}
+              From {item.retailerName} • ₹{item.totalPrice} {item.deliverySlot && item.deliverySlot !== 'Deliver Now' ? `• ${item.deliverySlot}` : ''}
             </Text>
             <Text style={styles.orderHistoryTime}>
               {formattedDate}
@@ -983,6 +1095,37 @@ export default function CustomerPortal() {
                 <Ionicons name="navigate-outline" size={16} color="#ffffff" style={{ marginRight: 6 }} />
                 <Text style={styles.trackOverlayBtnText}>Track Live Status (Full Screen)</Text>
               </TouchableOpacity>
+            )}
+
+            {isCompleted && (
+              <View style={styles.historyActionRow}>
+                <TouchableOpacity
+                  style={styles.historyActionBtnSecondary}
+                  onPress={() => setSelectedReceiptOrder(item)}
+                >
+                  <Ionicons name="receipt-outline" size={16} color="#16a34a" style={{ marginRight: 6 }} />
+                  <Text style={styles.historyActionBtnSecondaryTxt}>View Receipt</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.historyActionBtnPrimary}
+                  onPress={() => handleBuyAgain(item)}
+                >
+                  <Ionicons name="refresh-outline" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                  <Text style={styles.historyActionBtnPrimaryTxt}>Buy Again</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {isFailed && (
+              <View style={[styles.historyActionRow, { marginBottom: 16 }]}>
+                <TouchableOpacity
+                  style={[styles.historyActionBtnPrimary, { flex: 1 }]}
+                  onPress={() => handleBuyAgain(item)}
+                >
+                  <Ionicons name="refresh-outline" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                  <Text style={styles.historyActionBtnPrimaryTxt}>Reorder Items</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
             {!isFailed ? (
@@ -1177,19 +1320,29 @@ export default function CustomerPortal() {
               style={styles.categoryScroll}
               contentContainerStyle={styles.categoryScrollContent}
             >
-              {['All', 'Packaged Food', 'Dairy & Eggs', 'Beverages', 'Grocery & Staples', 'Snacks & Biscuits'].map((cat) => (
+              {['All', 'Favorites', 'Packaged Food', 'Dairy & Eggs', 'Beverages', 'Grocery & Staples', 'Snacks & Biscuits'].map((cat) => (
                 <TouchableOpacity
                   key={cat}
                   style={[
                     styles.categoryChip,
                     selectedCategory === cat && styles.categoryChipActive,
+                    cat === 'Favorites' && { flexDirection: 'row', alignItems: 'center' }
                   ]}
                   onPress={() => setSelectedCategory(cat)}
                 >
+                  {cat === 'Favorites' && (
+                    <Ionicons
+                      name="heart"
+                      size={12}
+                      color={selectedCategory === 'Favorites' ? '#ef4444' : '#e2e8f0'}
+                      style={{ marginRight: 4 }}
+                    />
+                  )}
                   <Text
                     style={[
                       styles.categoryChipText,
                       selectedCategory === cat && styles.categoryChipTextActive,
+                      cat === 'Favorites' && selectedCategory === 'Favorites' && { color: '#ef4444' }
                     ]}
                   >
                     {cat}
@@ -1295,6 +1448,19 @@ export default function CustomerPortal() {
               >
                 <LinearGradient colors={['#f8fafc', '#f1f5f9']} style={styles.productImagePlaceholder}>
                   <Ionicons name="cube-outline" size={40} color="#94a3b8" />
+                  <TouchableOpacity
+                    style={styles.favoriteHeartBtn}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(item.id);
+                    }}
+                  >
+                    <Ionicons
+                      name={(favorites || []).includes(item.id) ? "heart" : "heart-outline"}
+                      size={18}
+                      color={(favorites || []).includes(item.id) ? "#ef4444" : "#64748b"}
+                    />
+                  </TouchableOpacity>
                 </LinearGradient>
                 <View style={styles.productInfo}>
                   <Text style={styles.productCategory}>{item.category}</Text>
@@ -1431,6 +1597,131 @@ export default function CustomerPortal() {
             )}
           </View>
         </TouchableOpacity>
+      )}
+
+      {/* Digital Receipt Modal */}
+      {selectedReceiptOrder && (
+        <Modal
+          visible={!!selectedReceiptOrder}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setSelectedReceiptOrder(null)}
+        >
+          <View style={styles.receiptModalOverlay}>
+            <View style={styles.receiptContainer}>
+              <View style={styles.receiptHeader}>
+                <Ionicons name="checkmark-circle" size={44} color="#16a34a" />
+                <Text style={styles.receiptTitle}>Payment Receipt</Text>
+                <Text style={styles.receiptSubtitle}>NearFind Delivery Network</Text>
+              </View>
+
+              <View style={styles.receiptDivider} />
+
+              {/* Order Meta Info */}
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Order ID</Text>
+                <Text style={[styles.receiptValue, { fontWeight: '700' }]}>#{selectedReceiptOrder.id}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Merchant</Text>
+                <Text style={styles.receiptValue}>{selectedReceiptOrder.retailerName}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Date</Text>
+                <Text style={styles.receiptValue}>
+                  {new Date(selectedReceiptOrder.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Delivery Slot</Text>
+                <Text style={[styles.receiptValue, { color: '#16a34a', fontWeight: '700' }]}>
+                  {selectedReceiptOrder.deliverySlot || 'Deliver Now'}
+                </Text>
+              </View>
+
+              <View style={styles.receiptDivider} />
+
+              {/* Items Table */}
+              <Text style={[styles.receiptLabel, { marginBottom: 8, fontWeight: '700' }]}>Items Ordered</Text>
+              {selectedReceiptOrder.items && selectedReceiptOrder.items.length > 0 ? (
+                selectedReceiptOrder.items.map((item, idx) => (
+                  <View key={idx} style={styles.receiptItemRow}>
+                    <Text style={styles.receiptItemName}>{item.productName}</Text>
+                    <Text style={styles.receiptItemQtyPrice}>{item.quantity} x ₹{item.price}</Text>
+                    <Text style={styles.receiptItemTotal}>₹{item.quantity * item.price}</Text>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.receiptItemRow}>
+                  <Text style={styles.receiptItemName}>{selectedReceiptOrder.productName}</Text>
+                  <Text style={styles.receiptItemQtyPrice}>{selectedReceiptOrder.quantity} x ₹{selectedReceiptOrder.totalPrice / selectedReceiptOrder.quantity}</Text>
+                  <Text style={styles.receiptItemTotal}>₹{selectedReceiptOrder.totalPrice}</Text>
+                </View>
+              )}
+
+              <View style={styles.receiptDivider} />
+
+              {/* Cost Summary */}
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Items Subtotal</Text>
+                <Text style={styles.receiptValue}>₹{selectedReceiptOrder.totalPrice}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Delivery Partner Fee</Text>
+                <Text style={styles.receiptValue}>₹30</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Rider Payout (Platform Sponsored)</Text>
+                <Text style={[styles.receiptValue, { color: '#16a34a', fontWeight: '600' }]}>₹25 (Incl.)</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Tax & Services</Text>
+                <Text style={styles.receiptValue}>₹0</Text>
+              </View>
+
+              <View style={styles.receiptDivider} />
+
+              {/* Total Row */}
+              <View style={styles.receiptTotalRow}>
+                <Text style={styles.receiptTotalLabel}>Total Amount Paid</Text>
+                <Text style={styles.receiptTotalValue}>₹{selectedReceiptOrder.totalPrice + 30}</Text>
+              </View>
+
+              {/* Savings Box */}
+              <View style={styles.receiptSavingsBox}>
+                <Ionicons name="gift-outline" size={16} color="#15803d" style={{ marginRight: 6 }} />
+                <Text style={styles.receiptSavingsTxt}>
+                  Congratulations! You saved ₹{Math.round(selectedReceiptOrder.totalPrice * 0.15)} on this order.
+                </Text>
+              </View>
+
+              {/* Barcode Graphic */}
+              <View style={styles.barcodeContainer}>
+                <View style={styles.barcodeLines}>
+                  {[2, 4, 1, 3, 2, 4, 1, 2, 3, 1, 4, 2, 1, 3, 2, 1, 4, 2, 3, 1, 2, 4].map((w, idx) => (
+                    <View
+                      key={idx}
+                      style={{
+                        width: w,
+                        height: 36,
+                        backgroundColor: '#0f172a',
+                        marginHorizontal: 1,
+                      }}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.barcodeText}>NF-{selectedReceiptOrder.id}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.receiptCloseBtn}
+                onPress={() => setSelectedReceiptOrder(null)}
+              >
+                <Text style={styles.receiptCloseBtnTxt}>Close Receipt</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       )}
     </View>
   );
@@ -2772,6 +3063,282 @@ const styles = StyleSheet.create({
   },
   sortChipTextActive: {
     color: '#16a34a',
+    fontWeight: '700',
+  },
+  favoriteHeartBtn: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    zIndex: 20,
+  },
+  schedulerTypeRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  schedulerTypeCard: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    padding: 12,
+    alignItems: 'center',
+  },
+  schedulerTypeCardActive: {
+    borderColor: '#16a34a',
+    backgroundColor: '#f0fdf4',
+  },
+  schedulerTypeLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginTop: 6,
+  },
+  schedulerTypeLabelActive: {
+    color: '#16a34a',
+  },
+  schedulerTypeSub: {
+    fontSize: 10,
+    color: '#64748b',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  slotsWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  slotChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  slotChipActive: {
+    backgroundColor: '#16a34a',
+    borderColor: '#16a34a',
+  },
+  slotChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  slotChipTextActive: {
+    color: '#ffffff',
+  },
+  trackingSlotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  trackingSlotText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#16a34a',
+  },
+  historyActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  historyActionBtnPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#16a34a',
+    paddingVertical: 10,
+    borderRadius: 10,
+    shadowColor: '#16a34a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  historyActionBtnPrimaryTxt: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  historyActionBtnSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1.5,
+    borderColor: '#16a34a',
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  historyActionBtnSecondaryTxt: {
+    color: '#16a34a',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  receiptModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  receiptContainer: {
+    width: '100%',
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  receiptHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  receiptTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginTop: 8,
+  },
+  receiptSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  receiptDivider: {
+    height: 1,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 1,
+    marginVertical: 12,
+  },
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  receiptLabel: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  receiptValue: {
+    fontSize: 12,
+    color: '#0f172a',
+    fontWeight: '500',
+  },
+  receiptItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  receiptItemName: {
+    flex: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+  receiptItemQtyPrice: {
+    flex: 1,
+    fontSize: 11,
+    color: '#64748b',
+    textAlign: 'right',
+  },
+  receiptItemTotal: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0f172a',
+    textAlign: 'right',
+  },
+  receiptTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  receiptTotalLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  receiptTotalValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#16a34a',
+  },
+  receiptSavingsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dcfce7',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
+  },
+  receiptSavingsTxt: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#15803d',
+    flex: 1,
+  },
+  barcodeContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  barcodeLines: {
+    flexDirection: 'row',
+    height: 36,
+  },
+  barcodeText: {
+    fontSize: 10,
+    color: '#64748b',
+    marginTop: 4,
+    letterSpacing: 3,
+    fontWeight: '600',
+  },
+  receiptCloseBtn: {
+    backgroundColor: '#0f172a',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  receiptCloseBtnTxt: {
+    color: '#ffffff',
+    fontSize: 13,
     fontWeight: '700',
   },
 });
