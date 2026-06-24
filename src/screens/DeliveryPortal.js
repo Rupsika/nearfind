@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,7 @@ import {
   FlatList,
   ScrollView,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,6 +18,8 @@ const { width } = Dimensions.get('window');
 export default function DeliveryPortal() {
   const { orders, acceptDelivery, updateOrderStatus, logoutUser } = useContext(AppContext);
   const [activeSubTab, setActiveSubTab] = useState('available'); // available | active | stats
+
+  const riderProgress = useRef(new Animated.Value(0)).current;
 
   // Payout per delivery
   const PAYOUT_AMOUNT = 40;
@@ -44,6 +47,21 @@ export default function DeliveryPortal() {
     }, 200);
     return () => clearInterval(timer);
   }, []);
+
+  // Map Rider Progress Animation Effect for Active Delivery Run
+  useEffect(() => {
+    if (currentActiveJob && currentActiveJob.status === 'Picked Up') {
+      Animated.timing(riderProgress, {
+        toValue: 1,
+        duration: 12000, // 12 seconds smooth ride simulation
+        useNativeDriver: false,
+      }).start();
+    } else if (currentActiveJob && currentActiveJob.status === 'Delivered') {
+      riderProgress.setValue(1);
+    } else {
+      riderProgress.setValue(0);
+    }
+  }, [currentActiveJob ? currentActiveJob.status : null]);
 
   const formatTime = (ts) => {
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -93,6 +111,51 @@ export default function DeliveryPortal() {
             <Text style={styles.acceptJobBtnText}>Accept Job</Text>
           </TouchableOpacity>
         </View>
+      </View>
+    );
+  };
+
+  // Render visual navigation map for active run
+  const renderActiveMap = () => {
+    if (!currentActiveJob) return null;
+
+    const leftPos = riderProgress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [10, width - 64 - 24 - 50], // bounds matching card boundaries
+    });
+
+    return (
+      <View style={styles.mapContainer}>
+        <Text style={styles.mapTitle}>Live Navigation Route</Text>
+        <View style={styles.mapBox}>
+          <View style={styles.roadLine} />
+
+          <View style={[styles.mapNode, { left: 10 }]}>
+            <View style={styles.mapNodeIconBgStore}>
+              <Ionicons name="storefront" size={12} color="#ffffff" />
+            </View>
+            <Text style={styles.mapNodeLabel}>Store</Text>
+          </View>
+
+          <View style={[styles.mapNode, { right: 10 }]}>
+            <View style={styles.mapNodeIconBgHome}>
+              <Ionicons name="home" size={12} color="#ffffff" />
+            </View>
+            <Text style={styles.mapNodeLabel}>Customer</Text>
+          </View>
+
+          <Animated.View style={[styles.mapRiderNode, { left: leftPos }]}>
+            <View style={styles.mapNodeIconBgRider}>
+              <Ionicons name="bicycle" size={12} color="#ffffff" />
+            </View>
+            <Text style={styles.mapRiderLabel}>You</Text>
+          </Animated.View>
+        </View>
+        <Text style={styles.mapStatusFooter}>
+          {currentActiveJob.status === 'Picked Up'
+            ? "Navigating to Priya's House (1.5 km)..."
+            : 'Proceed to store to collect order.'}
+        </Text>
       </View>
     );
   };
@@ -222,6 +285,9 @@ export default function DeliveryPortal() {
                   </View>
                 </View>
               </View>
+
+              {/* Visual 2D Navigation Map */}
+              {renderActiveMap()}
 
               {/* Action buttons based on current state */}
               {currentActiveJob.status === 'Ready for Pickup' ? (
@@ -671,5 +737,108 @@ const styles = StyleSheet.create({
     padding: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
+  },
+  mapContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 16,
+  },
+  mapTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  mapBox: {
+    height: 70,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    position: 'relative',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  roadLine: {
+    position: 'absolute',
+    left: 45,
+    right: 45,
+    height: 2,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#94a3b8',
+    borderRadius: 1,
+  },
+  mapNode: {
+    position: 'absolute',
+    alignItems: 'center',
+    width: 50,
+  },
+  mapNodeIconBgStore: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#0284c7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  mapNodeIconBgHome: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#0f172a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  mapNodeLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#64748b',
+    marginTop: 2,
+  },
+  mapRiderNode: {
+    position: 'absolute',
+    alignItems: 'center',
+    width: 50,
+    top: 10,
+  },
+  mapNodeIconBgRider: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#fbbf24',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  mapRiderLabel: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#fbbf24',
+    marginTop: 1,
+  },
+  mapStatusFooter: {
+    fontSize: 10,
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 6,
+    fontWeight: '600',
   },
 });
