@@ -51,6 +51,7 @@ export default function CustomerPortal() {
   const [deliveryType, setDeliveryType] = useState('now'); // 'now' | 'scheduled'
   const [selectedSlot, setSelectedSlot] = useState('4:00 PM - 6:00 PM');
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState(null);
+  const [selectedFulfillment, setSelectedFulfillment] = useState('nearest');
 
   // Additional states for location, chat, animated rider, and notifications
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -352,24 +353,29 @@ export default function CustomerPortal() {
     if (!opt) return null;
 
     const { cheapestStore, nearestStore, splitOrders, splitPossible, splitTotalPrice } = opt;
-    const defaultOption = nearestStore ? 'nearest' : 'split';
-    const [selectedFulfillment, setSelectedFulfillment] = useState(defaultOption);
+    
+    // Resolve active fulfillment dynamically to strictly comply with React hooks rules
+    const activeFulfillment = (selectedFulfillment === 'nearest' && !nearestStore)
+      ? 'split'
+      : (selectedFulfillment === 'cheapest' && !cheapestStore)
+        ? 'split'
+        : selectedFulfillment;
 
     const handleCheckout = async () => {
       let itemsToOrder = [];
-      if (selectedFulfillment === 'cheapest' && cheapestStore) {
+      if (activeFulfillment === 'cheapest' && cheapestStore) {
         itemsToOrder = cart.map(item => ({
           productId: item.productId,
           retailerId: cheapestStore.id,
           quantity: item.quantity
         }));
-      } else if (selectedFulfillment === 'nearest' && nearestStore) {
+      } else if (activeFulfillment === 'nearest' && nearestStore) {
         itemsToOrder = cart.map(item => ({
           productId: item.productId,
           retailerId: nearestStore.id,
           quantity: item.quantity
         }));
-      } else if (selectedFulfillment === 'split' && splitPossible) {
+      } else if (activeFulfillment === 'split' && splitPossible) {
         itemsToOrder = splitOrders.map(item => ({
           productId: item.productId,
           retailerId: item.retailerId,
@@ -444,15 +450,15 @@ export default function CustomerPortal() {
           <TouchableOpacity
             style={[
               styles.optCard,
-              selectedFulfillment === 'nearest' && styles.optCardActive
+              activeFulfillment === 'nearest' && styles.optCardActive
             ]}
             onPress={() => setSelectedFulfillment('nearest')}
           >
             <View style={styles.optRadioCol}>
               <Ionicons
-                name={selectedFulfillment === 'nearest' ? 'checkmark-circle' : 'ellipse-outline'}
+                name={activeFulfillment === 'nearest' ? 'checkmark-circle' : 'ellipse-outline'}
                 size={20}
-                color={selectedFulfillment === 'nearest' ? '#16a34a' : '#94a3b8'}
+                color={activeFulfillment === 'nearest' ? '#16a34a' : '#94a3b8'}
               />
             </View>
             <View style={styles.optContentCol}>
@@ -474,15 +480,15 @@ export default function CustomerPortal() {
           <TouchableOpacity
             style={[
               styles.optCard,
-              selectedFulfillment === 'cheapest' && styles.optCardActive
+              activeFulfillment === 'cheapest' && styles.optCardActive
             ]}
             onPress={() => setSelectedFulfillment('cheapest')}
           >
             <View style={styles.optRadioCol}>
               <Ionicons
-                name={selectedFulfillment === 'cheapest' ? 'checkmark-circle' : 'ellipse-outline'}
+                name={activeFulfillment === 'cheapest' ? 'checkmark-circle' : 'ellipse-outline'}
                 size={20}
-                color={selectedFulfillment === 'cheapest' ? '#16a34a' : '#94a3b8'}
+                color={activeFulfillment === 'cheapest' ? '#16a34a' : '#94a3b8'}
               />
             </View>
             <View style={styles.optContentCol}>
@@ -504,15 +510,15 @@ export default function CustomerPortal() {
           <TouchableOpacity
             style={[
               styles.optCard,
-              selectedFulfillment === 'split' && styles.optCardActive
+              activeFulfillment === 'split' && styles.optCardActive
             ]}
             onPress={() => setSelectedFulfillment('split')}
           >
             <View style={styles.optRadioCol}>
               <Ionicons
-                name={selectedFulfillment === 'split' ? 'checkmark-circle' : 'ellipse-outline'}
+                name={activeFulfillment === 'split' ? 'checkmark-circle' : 'ellipse-outline'}
                 size={20}
-                color={selectedFulfillment === 'split' ? '#16a34a' : '#94a3b8'}
+                color={activeFulfillment === 'split' ? '#16a34a' : '#94a3b8'}
               />
             </View>
             <View style={styles.optContentCol}>
