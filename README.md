@@ -21,24 +21,26 @@ The compiled installable Android APK file is located in the root of this project
 ## 🔄 Simulating the End-to-End Walkthrough
 Use the bottom tab bar to switch between roles in real-time. Follow this path to verify the core scope:
 
-1. **Customer Tab:** 
+1. **Home Tab (AI Shopping & Support Chatbot):**
+   * **Prompts & Queries:** Tap the *Home* tab. Select any of the suggested prompt pills (e.g., `"How do I cancel my order?"`, `"Support for delayed orders"`, `"Is Maggi in stock?"`) or type custom support queries (e.g., about delays, payment options, wrong items, stock availability). The AI assistant queries inventory data and responds instantly.
+2. **Customer Tab (Shop):** 
    * **Neighborhood Selector:** Tap the neighborhood selector at the top header (e.g. "Default", "Downtown", "Suburbs"). Distances of carrying stores will recalculate dynamically.
    * **Add Items & Favorites:** Tap the heart icon on "Milk" or "Maggi" to bookmark them. Select the `❤️ Favorites` category chip to filter the catalog. Press `+ Add` to add multiple items to your cart.
    * **Checkout Optimizer:** Go to the **Cart** tab. Review the smart optimization options (**Fastest**, **Cheapest**, or **Smart Split Delivery**).
    * **Delivery Scheduler:** Select "Schedule for Later" and pick a time slot (e.g., `6:00 PM - 8:00 PM`). Click **Place Optimized Order**.
-2. **Retailer Tab:** Select the merchant store from the top selector.
+3. **Retailer Tab:** Select the merchant store from the top selector.
    * Go to the **Pending** tab. Accept the incoming order within the **30-second ticking window**.
    * Go to the **Active** tab, click **Mark Packed**, and then **Ready for Pickup**.
-3. **Delivery Tab:** Tap the delivery portal.
+4. **Delivery Tab:** Tap the delivery portal.
    * Accept the unclaimed delivery job from the **Available** queue (under a 45-second acceptance countdown).
    * Under the **Active Run** tab, click **Confirm Package Picked Up** once collected.
    * Watch the customer's live 2D route map animate the rider icon.
    * Click **Confirm Package Delivered** once completed.
-4. **Customer Tab (My Orders):**
+5. **Customer Tab (My Orders):**
    * Expand your delivered order under the **My Orders** sub-tab.
-   * Tap **View Receipt** to inspect the styled digital receipt breakdown, simulated savings summary, and dynamically generated barcode.
+   * Tap **View Receipt** to inspect the styled digital receipt breakdown, savings notifications, and dynamically generated barcode.
    * Tap **Buy Again** to instantly refill your active cart with those exact products and navigate back to the checkout tab.
-5. **Admin Tab:** Tap this tab at any point to view system-wide logs, real-time inventory counts (which update dynamically as stock is bought/restored), and chronological status histories with timestamps. Tap the **Reset System Data** button to clear all transactions and reload default stock levels for another walkthrough!
+6. **Admin Tab:** Tap this tab at any point to view system-wide logs, real-time inventory counts (which update dynamically as stock is bought/restored), and chronological status histories with timestamps. Tap the **Reset System Data** button to clear all transactions and reload default stock levels for another walkthrough!
 
 ---
 
@@ -47,6 +49,7 @@ The application code is organized clearly:
 * **`App.js`:** The root navigator and layout shell containing the bottom navigation bar and dynamic event-status badges.
 * **`src/context/AppContext.js`:** Central state provider managing products, orders, shopping cart, favorites, location coordinates, notifications, and background interval loops simulating timeouts.
 * **`src/screens/`**
+  * **`HomePortal.js`:** Image carousel banner slides, role quick navigators, and the customer service AI support chatbot.
   * **`CustomerPortal.js`:** Custom browse list, favorites chip, inline cart controllers, delivery slot picker, live tracking map, simulated direct chat console, order history list, and the digital receipt modal.
   * **`RetailerPortal.js`:** Order queues split (Pending, Active, Completed) and status actions.
   * **`DeliveryPortal.js`:** Earnings tracker, available delivery runs, and status checkpoints.
