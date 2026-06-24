@@ -54,9 +54,9 @@ The application code is organized clearly:
 
 ---
 
-## 📝 Tradeoffs & Future Scope (162 words)
+## 📝 Tradeoffs & Future Scope (159 words)
 
 **Tradeoff & Future Scope Write-up:**  
 For this hyper-local application, I chose to implement all four user interfaces (Customer, Retailer, Delivery, Admin) in a single React Native application sharing a unified memory context (`AppContext`), instead of building three separate apps with a real-time web server. This tradeoff was selected to provide an extremely smooth testing experience: an evaluator can simulate a multi-item order optimization, accept it as a retailer, claim it as a delivery rider, and review the receipt as a customer in under two minutes on a single device without state synchronization delays. 
 
-If given more time, I would replace the simulated local state with a Node.js/Socket.io backend and database to support actual cross-device synchronization. I would also integrate live GPS routing via the React Native Mapview and Google Directions API to replace neighborhood mock distances, and implement push notifications to alert retailers of incoming orders when the app is in the background.
+If given more time, I would first integrate voice-activated search and ordering to improve accessibility, and implement an AI recommendation system to suggest smart baskets based on past ordering behavior. Additionally, I would build a dedicated inventory forecasting dashboard for retailers to predict restocking schedules, and establish a real-time WebSocket backend to synchronize status changes across separate physical devices.
