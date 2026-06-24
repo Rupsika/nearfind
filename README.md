@@ -29,10 +29,10 @@ Use the bottom tab bar to switch between roles in real-time. Follow this path to
    * **Checkout Optimizer:** Go to the **Cart** tab. Review the smart optimization options (**Fastest**, **Cheapest**, or **Smart Split Delivery**).
    * **Delivery Scheduler:** Select "Schedule for Later" and pick a time slot (e.g., `6:00 PM - 8:00 PM`). Click **Place Optimized Order**.
 3. **Retailer Tab:** Select the merchant store from the top selector.
-   * Go to the **Pending** tab. Accept the incoming order within the **60-second ticking window**.
+   * Go to the **Pending** tab. Accept the incoming order within the **60-second ticking window** (the order will automatically cancel and restore stock if not accepted in time).
    * Go to the **Active** tab, click **Mark Packed**, and then **Ready for Pickup**.
 4. **Delivery Tab:** Tap the delivery portal.
-   * Accept the unclaimed delivery job from the **Available** queue (under a 60-second acceptance countdown).
+   * Accept the unclaimed delivery job from the **Available** queue (under a 60-second acceptance countdown; the order will automatically cancel and restore stock if no partner accepts in time).
    * Under the **Active Run** tab, click **Confirm Package Picked Up** once collected.
    * Watch the customer's live 2D route map animate the rider icon.
    * Click **Confirm Package Delivered** once completed.
