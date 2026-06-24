@@ -57,9 +57,11 @@ The application code is organized clearly:
 
 ---
 
-## 📝 Tradeoffs & Future Scope (163 words)
+## 📝 Tradeoffs & Future Scope (195 words)
 
 **Tradeoff & Future Scope Write-up:**  
 For this hyper-local application, I chose to implement all four user interfaces (Customer, Retailer, Delivery, Admin) in a single React Native application sharing a unified memory context (`AppContext`), instead of building three separate apps with a real-time web server. This tradeoff was selected to provide an extremely smooth testing experience: an evaluator can simulate a multi-item order optimization, accept it as a retailer, claim it as a delivery rider, and review the receipt as a customer in under two minutes on a single device without state synchronization delays. 
 
-If given more time, I would first integrate voice-activated search and ordering to improve accessibility, and replace the local rule-based chatbot with an LLM-powered assistant to resolve arbitrary customer queries dynamically. Additionally, I would build a dedicated inventory forecasting dashboard for retailers to predict restocking schedules, and establish a real-time WebSocket backend to synchronize status changes across separate physical devices.
+For customer support queries, we designed a **Hybrid AI Chatbot Architecture** featuring a local fallback mechanism: if a Gemini API Key is configured securely in the Admin Dashboard, the button actions query the live Gemini-Flash REST endpoint; otherwise, it falls back gracefully to an offline rule-based heuristic engine to ensure zero-downtime, local-only responsiveness.
+
+If given more time, I would first integrate voice-activated search and ordering to improve accessibility, and replace the selection-only buttons with free-form typing input once the LLM models are fully authenticated in production. Additionally, I would build a dedicated inventory forecasting dashboard for retailers to predict restocking schedules, and establish a real-time WebSocket backend to synchronize status changes across separate physical devices.

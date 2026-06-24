@@ -1,11 +1,12 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import {
   StyleSheet, Text, View, TouchableOpacity,
-  ScrollView, Animated, Dimensions,
+  ScrollView, Animated, Dimensions, TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppContext } from '../context/AppContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 const CARD_W = (width - 48) / 2;
@@ -236,6 +237,9 @@ export default function AdminDashboard() {
                 ))}
               </View>
             )}
+
+            {/* Gemini API Configuration */}
+            <GeminiConfigCard />
 
             {/* Reset */}
             <ResetCard onReset={resetSystem} />
@@ -479,6 +483,64 @@ function ResetCard({ onReset }) {
   );
 }
 
+function GeminiConfigCard() {
+  const [apiKey, setApiKey] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    // Load existing key
+    AsyncStorage.getItem('@nearfind_gemini_api_key').then((val) => {
+      if (val) {
+        setApiKey(val);
+        setIsSaved(true);
+      }
+    });
+  }, []);
+
+  const handleSave = async () => {
+    if (apiKey.trim()) {
+      await AsyncStorage.setItem('@nearfind_gemini_api_key', apiKey.trim());
+      setIsSaved(true);
+      alert('Gemini API Key saved successfully! The Home Portal AI chatbot will now use live Gemini Flash.');
+    } else {
+      await AsyncStorage.removeItem('@nearfind_gemini_api_key');
+      setIsSaved(false);
+      alert('Gemini API Key removed. The chatbot will fall back to local rule-based responses.');
+    }
+  };
+
+  return (
+    <View style={styles.apiCard}>
+      <View style={styles.apiHeaderRow}>
+        <Ionicons name="logo-google" size={16} color="#6366f1" />
+        <Text style={styles.apiCardTitle}>Configure Gemini AI Key</Text>
+      </View>
+      <Text style={styles.apiCardSub}>
+        Paste your Gemini API Key here to enable live LLM assistant capabilities on this device. Leave blank to fall back to the offline rule-based generator.
+      </Text>
+      <View style={styles.apiInputRow}>
+        <TextInput
+          secureTextEntry
+          placeholder="Enter Gemini API Key..."
+          placeholderTextColor="#64748b"
+          value={apiKey}
+          onChangeText={(text) => {
+            setApiKey(text);
+            setIsSaved(false);
+          }}
+          style={styles.apiTextInput}
+        />
+        <TouchableOpacity
+          style={[styles.apiSaveBtn, isSaved && styles.apiSaveBtnActive]}
+          onPress={handleSave}
+        >
+          <Text style={styles.apiSaveBtnTxt}>{isSaved ? 'Saved' : 'Save'}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0f1e' },
 
@@ -601,4 +663,59 @@ const styles = StyleSheet.create({
 
   // Section title (shared)
   sectionTitle: { fontSize: 14, fontWeight: '800', color: '#e2e8f0', marginBottom: 12 },
+  apiCard: {
+    backgroundColor: '#0f172a',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    padding: 16,
+    marginBottom: 16,
+  },
+  apiHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  apiCardTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  apiCardSub: {
+    fontSize: 11,
+    color: '#64748b',
+    lineHeight: 16,
+    marginBottom: 14,
+  },
+  apiInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  apiTextInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    color: '#ffffff',
+    fontSize: 13,
+  },
+  apiSaveBtn: {
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  apiSaveBtnActive: {
+    backgroundColor: '#059669',
+  },
+  apiSaveBtnTxt: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
 });

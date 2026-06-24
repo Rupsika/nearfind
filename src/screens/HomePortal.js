@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppContext } from '../context/AppContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -44,11 +45,16 @@ const SLIDER_DATA = [
   },
 ];
 
-const SUGGESTED_PROMPTS = [
-  "Is Maggi in stock?",
-  "How do I cancel my order?",
-  "Support for delayed orders",
-  "Compare Amul Butter prices",
+const CHAT_QUESTIONS = [
+  { id: 'maggi', text: 'Is Maggi in stock?', icon: 'cube-outline', query: 'Is Maggi in stock?' },
+  { id: 'compare', text: 'Compare store prices', icon: 'git-compare-outline', query: 'Compare store prices' },
+  { id: 'stock', text: 'Store stock overview', icon: 'list-circle-outline', query: 'Store stock overview' },
+  { id: 'delay', text: 'Track delayed orders', icon: 'time-outline', query: 'Support for delayed orders' },
+  { id: 'cancel', text: 'How do I cancel order?', icon: 'close-circle-outline', query: 'How do I cancel my order?' },
+  { id: 'payment', text: 'Payment options', icon: 'card-outline', query: 'Simulated payment options' },
+  { id: 'location', text: 'Change delivery address', icon: 'pin-outline', query: 'How to change location?' },
+  { id: 'wrong', text: 'Report wrong/damaged items', icon: 'warning-outline', query: 'Report damaged or missing items' },
+  { id: 'joke', text: 'Tell me a joke!', icon: 'happy-outline', query: 'Tell me a joke' },
 ];
 
 export default function HomePortal() {
@@ -65,7 +71,6 @@ export default function HomePortal() {
       timestamp: Date.now(),
     },
   ]);
-  const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const chatScrollRef = useRef(null);
 
@@ -211,17 +216,13 @@ export default function HomePortal() {
   };
 
   // Send Message Wrapper
-  const handleSendMessage = async (customText = null) => {
-    const textToSend = (customText || inputText).trim();
-    if (!textToSend) return;
-
-    // Clear input
-    if (!customText) setInputText('');
+  const handleSendMessage = async (textToSend) => {
+    if (!textToSend || !textToSend.trim()) return;
 
     // Append user message
     const userMessage = {
       id: Date.now().toString(),
-      text: textToSend,
+      text: textToSend.trim(),
       sender: 'user',
       timestamp: Date.now(),
     };
@@ -233,9 +234,55 @@ export default function HomePortal() {
     setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
 
     try {
-      // Run heuristic parser locally
-      await new Promise((res) => setTimeout(res, 500)); // Simulating thinking delay
-      const botResponse = getHeuristicResponse(textToSend);
+      let botResponse = '';
+      const storedApiKey = await AsyncStorage.getItem('@nearfind_gemini_api_key');
+
+      if (storedApiKey) {
+        // Real Gemini REST API Call
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${storedApiKey}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `You are the NearFind Assistant, a hyperlocal delivery chatbot.
+We carry:
+- Maggi Noodles (Sharma Kirana has stock, Quick Mart is OOS).
+- Amul Butter (Sharma Kirana: ₹48, Quick Mart: ₹46, Super Save: ₹47).
+- Coca-Cola (all stores carry it, Sharma is closest).
+- Aashirvaad Atta (Sharma: ₹210, Super Save: ₹198).
+- Bourbon Biscuits.
+
+Our features:
+- Customer Portal: browsing, favorites, time-scheduled slots, receipts, one-tap reorders.
+- Retailer Portal: Sharma Kirana order acceptance & packing dashboard.
+- Delivery Portal: rider earnings, available runs, live map navigation.
+- Admin Panel: reset data, see charts and stock lists.
+
+Customer support guidelines:
+- Delayed orders: tell them to check the tracking map under "My Orders".
+- Cancellations/Refunds: can cancel prior to store acceptance. Restores stock instantly. Refund takes 2-3 days.
+- Payments: simulated right now, UPI/cards/Razorpay in next release.
+
+Respond concisely in 1-3 sentences. Do not mention system details unless asked.
+User query: ${textToSend.trim()}`
+                }]
+              }]
+            })
+          }
+        );
+
+        const data = await response.json();
+        botResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received. Please check your internet connection or Gemini API key.";
+      } else {
+        // Fallback: Run rule-based heuristic parser locally
+        await new Promise((res) => setTimeout(res, 500));
+        botResponse = getHeuristicResponse(textToSend.trim());
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -248,6 +295,15 @@ export default function HomePortal() {
       ]);
     } catch (error) {
       console.error(error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: "I couldn't contact the support engine. Please verify your connection or your Gemini key.",
+          sender: 'bot',
+          timestamp: Date.now(),
+        }
+      ]);
     } finally {
       setIsLoading(false);
       setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
@@ -390,40 +446,24 @@ export default function HomePortal() {
             )}
           </ScrollView>
 
-          {/* Suggested Prompt Pills */}
-          <View style={styles.suggestionsWrapper}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsScroll}>
-              {SUGGESTED_PROMPTS.map((p, idx) => (
+          {/* Quick Actions Grid */}
+          <View style={styles.quickActionsContainer}>
+            <Text style={styles.quickActionsHeading}>Ask a Support Question:</Text>
+            <View style={styles.quickActionsGrid}>
+              {CHAT_QUESTIONS.map((q) => (
                 <TouchableOpacity
-                  key={idx}
-                  style={styles.suggestionPill}
-                  onPress={() => handleSendMessage(p)}
+                  key={q.id}
+                  style={styles.actionCard}
+                  onPress={() => handleSendMessage(q.query)}
                   disabled={isLoading}
                 >
-                  <Text style={styles.suggestionText}>{p}</Text>
+                  <Ionicons name={q.icon} size={15} color="#16a34a" style={{ marginRight: 6 }} />
+                  <Text style={styles.actionText} numberOfLines={1}>
+                    {q.text}
+                  </Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
-          </View>
-
-          {/* Chat Input Console */}
-          <View style={styles.chatInputBar}>
-            <TextInput
-              style={styles.chatTextInput}
-              placeholder="Ask about items, stores, prices..."
-              placeholderTextColor="#94a3b8"
-              value={inputText}
-              onChangeText={setInputText}
-              onSubmitEditing={() => handleSendMessage()}
-              disabled={isLoading}
-            />
-            <TouchableOpacity
-              style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
-              onPress={() => handleSendMessage()}
-              disabled={!inputText.trim() || isLoading}
-            >
-              <Ionicons name="arrow-up" size={18} color="#ffffff" />
-            </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -685,65 +725,42 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   
-  // Suggestion Pills
-  suggestionsWrapper: {
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-    paddingVertical: 8,
-    backgroundColor: '#fafafa',
-  },
-  suggestionsScroll: {
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  suggestionPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.01,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  suggestionText: {
-    fontSize: 12,
-    color: '#475569',
-    fontWeight: '500',
-  },
-
-  // Input Console bar
-  chatInputBar: {
-    flexDirection: 'row',
-    padding: 10,
+  // Support Actions Grid styles
+  quickActionsContainer: {
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
-    alignItems: 'center',
+    padding: 14,
     backgroundColor: '#ffffff',
   },
-  chatTextInput: {
-    flex: 1,
-    height: 40,
-    backgroundColor: '#f1f5f9',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    fontSize: 13,
-    color: '#0f172a',
-    marginRight: 8,
+  quickActionsHeading: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
   },
-  sendBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#16a34a',
-    justifyContent: 'center',
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  actionCard: {
+    flexDirection: 'row',
     alignItems: 'center',
+    width: (width - 32 - 28 - 8) / 2,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
-  sendBtnDisabled: {
-    backgroundColor: '#cbd5e1',
+  actionText: {
+    fontSize: 12,
+    color: '#334155',
+    fontWeight: '600',
+    flex: 1,
   },
   logoutBtn: {
     padding: 8,
