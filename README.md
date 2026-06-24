@@ -6,6 +6,15 @@ The project is packaged as a **single standalone APK** containing an integrated 
 
 ---
 
+## 🎥 App Walkthrough Video
+Watch the 4-minute demo walkthrough video showing the end-to-end user flows, order optimization, acceptance timeouts, and live tracking map:
+
+<video src="assets/demo_walkthrough.mp4" controls width="100%"></video>
+
+*(If the video player doesn't display, you can view the raw file directly in [assets/demo_walkthrough.mp4](assets/demo_walkthrough.mp4).)*
+
+---
+
 ## 📱 Sideloading the APK
 The compiled installable Android APK file is located in the root of this project:
 📁 **`NearFind-Release.apk`** (located at [NearFind-Release.apk](file:///c:/Users/rupsi/OneDrive/Desktop/Projects/nearfind/NearFind-Release.apk))
