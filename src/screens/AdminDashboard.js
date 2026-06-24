@@ -69,7 +69,7 @@ function KPICard({ label, value, icon, colors, sub }) {
 }
 
 export default function AdminDashboard() {
-  const { orders, products, resetSystem } = useContext(AppContext);
+  const { orders, products, resetSystem, logoutUser } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
@@ -126,9 +126,14 @@ export default function AdminDashboard() {
             <Text style={styles.headerSub}>NearFind</Text>
             <Text style={styles.headerTitle}>Admin Dashboard</Text>
           </View>
-          <View style={styles.liveChip}>
-            <PulseDot color="#22c55e" />
-            <Text style={styles.liveText}>LIVE</Text>
+          <View style={styles.headerTopRight}>
+            <TouchableOpacity onPress={logoutUser} style={styles.logoutBtn}>
+              <Ionicons name="log-out-outline" size={16} color="#ef4444" />
+            </TouchableOpacity>
+            <View style={styles.liveChip}>
+              <PulseDot color="#22c55e" />
+              <Text style={styles.liveText}>LIVE</Text>
+            </View>
           </View>
         </View>
 
@@ -480,6 +485,8 @@ const styles = StyleSheet.create({
   // Header
   header: { paddingTop: 52, paddingHorizontal: 20, paddingBottom: 20 },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+  headerTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  logoutBtn: { padding: 6, backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 8 },
   headerSub: { fontSize: 11, color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   headerTitle: { fontSize: 24, fontWeight: '800', color: '#ffffff', marginTop: 2 },
   liveChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff10', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, gap: 4, borderWidth: 1, borderColor: '#ffffff15' },

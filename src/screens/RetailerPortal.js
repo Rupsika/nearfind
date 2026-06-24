@@ -22,9 +22,20 @@ export default function RetailerPortal() {
     acceptOrder,
     rejectOrder,
     updateOrderStatus,
+    currentUser,
+    logoutUser,
   } = useContext(AppContext);
 
   const [activeSubTab, setActiveSubTab] = useState('pending'); // pending | active | history
+
+  const isRetailerRestricted = currentUser && currentUser.role === 'retailer' && currentUser.retailerId;
+
+  // Auto-select retailer store based on user profile restrictions
+  useEffect(() => {
+    if (isRetailerRestricted && activeRetailerId !== currentUser.retailerId) {
+      selectRetailer(currentUser.retailerId);
+    }
+  }, [isRetailerRestricted, currentUser, activeRetailerId]);
 
   // Retailer metadata mapping
   const retailers = {
@@ -174,37 +185,45 @@ export default function RetailerPortal() {
     <View style={styles.container}>
       {/* Retailer Selector Banner */}
       <LinearGradient colors={['#0f172a', '#1e293b']} style={styles.topBanner}>
-        <Text style={styles.merchantLabel}>Merchant Hub</Text>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.merchantLabel}>Merchant Hub</Text>
+          <TouchableOpacity onPress={logoutUser} style={styles.logoutBtn}>
+            <Ionicons name="log-out-outline" size={16} color="#ef4444" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.selectorContainer}>
-          {Object.entries(retailers).map(([id, meta]) => {
-            const isSelected = activeRetailerId === id;
-            const hasPending = orders.some((o) => o.status === 'Placed' && o.retailerId === id);
-            return (
-              <TouchableOpacity
-                key={id}
-                onPress={() => selectRetailer(id)}
-                style={[
-                  styles.selectorTab,
-                  isSelected && styles.selectorTabActive,
-                ]}
-              >
-                <View>
-                  <Ionicons
-                    name={meta.icon}
-                    size={18}
-                    color={isSelected ? '#0f172a' : '#94a3b8'}
-                    style={{ marginBottom: 4 }}
-                  />
-                  {hasPending && (
-                    <View style={styles.dotBadge} />
-                  )}
-                </View>
-                <Text style={[styles.selectorText, isSelected && styles.selectorTextActive]} numberOfLines={1}>
-                  {id === 'sharma' ? 'Sharma Kirana' : id === 'quick_mart' ? 'Quick Mart' : 'Super Save'}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          {Object.entries(retailers)
+            .filter(([id]) => !isRetailerRestricted || id === currentUser.retailerId)
+            .map(([id, meta]) => {
+              const isSelected = activeRetailerId === id;
+              const hasPending = orders.some((o) => o.status === 'Placed' && o.retailerId === id);
+              return (
+                <TouchableOpacity
+                  key={id}
+                  onPress={() => selectRetailer(id)}
+                  style={[
+                    styles.selectorTab,
+                    isSelected && styles.selectorTabActive,
+                  ]}
+                  disabled={!!isRetailerRestricted}
+                >
+                  <View>
+                    <Ionicons
+                      name={meta.icon}
+                      size={18}
+                      color={isSelected ? '#0f172a' : '#94a3b8'}
+                      style={{ marginBottom: 4 }}
+                    />
+                    {hasPending && (
+                      <View style={styles.dotBadge} />
+                    )}
+                  </View>
+                  <Text style={[styles.selectorText, isSelected && styles.selectorTextActive]} numberOfLines={1}>
+                    {id === 'sharma' ? 'Sharma Kirana' : id === 'quick_mart' ? 'Quick Mart' : 'Super Save'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
         </View>
       </LinearGradient>
 
@@ -490,5 +509,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#ffffff',
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  logoutBtn: {
+    padding: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 8,
   },
 });

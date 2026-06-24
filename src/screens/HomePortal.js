@@ -1,0 +1,713 @@
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  Dimensions,
+  TextInput,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AppContext } from '../context/AppContext';
+
+const { width } = Dimensions.get('window');
+
+const SLIDER_DATA = [
+  {
+    id: '1',
+    image: require('../../assets/1.jpg'),
+    title: 'Lightning-Fast Local Delivery',
+    description: 'Get your orders delivered in under 20 minutes from local stores.',
+  },
+  {
+    id: '2',
+    image: require('../../assets/2.jpg'),
+    title: 'Fresh Kirana Groceries',
+    description: 'Support local merchants and order daily essentials at best prices.',
+  },
+  {
+    id: '3',
+    image: require('../../assets/3.jpg'),
+    title: 'Real-Time Stock Checking',
+    description: 'Instantly view item availability before placing your order.',
+  },
+  {
+    id: '4',
+    image: require('../../assets/4.jpg'),
+    title: 'Zero Hidden Charges',
+    description: 'Direct retailer prices with transparent delivery payouts.',
+  },
+];
+
+const SUGGESTED_PROMPTS = [
+  "Is Maggi in stock?",
+  "Compare Amul Butter prices",
+  "Any Coca-Cola nearby?",
+  "What is NearFind?",
+];
+
+export default function HomePortal() {
+  const { products, selectRole, logoutUser } = useContext(AppContext);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const flatListRef = useRef(null);
+  
+  // Chatbot State
+  const [messages, setMessages] = useState([
+    {
+      id: 'welcome',
+      text: "Hi there! I'm your NearFind shopping assistant. Ask me about nearby products, prices, or store stock!",
+      sender: 'bot',
+      timestamp: Date.now(),
+    },
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const chatScrollRef = useRef(null);
+
+  // Auto-playing Carousel Logic
+  useEffect(() => {
+    const timer = setInterval(() => {
+      let nextIndex = activeSlide + 1;
+      if (nextIndex >= SLIDER_DATA.length) {
+        nextIndex = 0;
+      }
+      setActiveSlide(nextIndex);
+      flatListRef.current?.scrollToIndex({
+        index: nextIndex,
+        animated: true,
+      });
+    }, 3500);
+
+    return () => clearInterval(timer);
+  }, [activeSlide]);
+
+  const onScroll = (event) => {
+    const slideSize = event.nativeEvent.layoutMeasurement.width;
+    const index = event.nativeEvent.contentOffset.x / slideSize;
+    const roundIndex = Math.round(index);
+    if (roundIndex !== activeSlide && roundIndex >= 0 && roundIndex < SLIDER_DATA.length) {
+      setActiveSlide(roundIndex);
+    }
+  };
+
+  // Heuristic responses for Rule-based Chatbot
+  const getHeuristicResponse = (query) => {
+    const lower = query.toLowerCase();
+    
+    // Check product keywords
+    let match = null;
+
+    if (lower.includes('maggi') || lower.includes('noodle')) {
+      match = products.find(p => p.id === 'maggi');
+    } else if (lower.includes('butter') || lower.includes('amul')) {
+      match = products.find(p => p.id === 'butter');
+    } else if (lower.includes('coke') || lower.includes('cola') || lower.includes('coca')) {
+      match = products.find(p => p.id === 'coke');
+    } else if (lower.includes('atta') || lower.includes('aashirvaad') || lower.includes('flour')) {
+      match = products.find(p => p.id === 'atta');
+    } else if (lower.includes('bourbon') || lower.includes('biscuit') || lower.includes('britannia')) {
+      match = products.find(p => p.id === 'bourbon');
+    }
+
+    if (match) {
+      const retailers = Object.entries(match.retailers).map(([id, data]) => {
+        return `${data.name} has ${data.stock} units at ₹${data.price} (distance: ${data.distance}km).`;
+      });
+      return `Here is the stock and price info for *${match.name}*:\n\n` + retailers.join('\n');
+    }
+
+    // Compare prices request
+    if (lower.includes('compare') || lower.includes('price') || lower.includes('cheapest') || lower.includes('cost')) {
+      let text = "Comparing current store prices for you:\n\n";
+      products.forEach(p => {
+        const prices = Object.entries(p.retailers).map(([id, data]) => `• ${data.name}: ₹${data.price} (${data.stock} in stock)`);
+        text += `*${p.name}*:\n${prices.join('\n')}\n\n`;
+      });
+      return text.trim();
+    }
+
+    // Check stock queries general
+    if (lower.includes('stock') || lower.includes('avail') || lower.includes('carry')) {
+      let text = "Here is our current store inventory overview:\n\n";
+      products.forEach(p => {
+        const stores = Object.entries(p.retailers)
+          .filter(([id, data]) => data.stock > 0)
+          .map(([id, data]) => `${data.name} (${data.stock} left)`);
+        
+        if (stores.length > 0) {
+          text += `• *${p.name}*: Available at ${stores.join(', ')}\n`;
+        } else {
+          text += `• *${p.name}*: Out of stock everywhere!\n`;
+        }
+      });
+      return text;
+    }
+
+    // General app info
+    if (lower.includes('nearfind') || lower.includes('what is') || lower.includes('how does')) {
+      return "NearFind is a hyperlocal delivery app that connects customers to nearby Kirana stores (like Sharma Kirana) and lets delivery agents accept jobs to bring items directly to your door in real time!";
+    }
+
+    if (lower.includes('joke')) {
+      const jokes = [
+        "Why did the tomato blush? Because it saw the salad dressing!",
+        "What do you call a fake noodle? An imposter!",
+        "Why did the grocery store close down? It ran out of thyme!",
+        "Why did the butter slide down the hill? To get to the other side!"
+      ];
+      return jokes[Math.floor(Math.random() * jokes.length)];
+    }
+
+    if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
+      return "Hello! I am your local NearFind assistant. How can I help you find groceries today?";
+    }
+
+    return "I can help you find products, check stock, or compare prices across nearby stores. Try asking me something like 'Is Maggi in stock?' or 'Compare Coke prices'!";
+  };
+
+  // Send Message Wrapper
+  const handleSendMessage = async (customText = null) => {
+    const textToSend = (customText || inputText).trim();
+    if (!textToSend) return;
+
+    // Clear input
+    if (!customText) setInputText('');
+
+    // Append user message
+    const userMessage = {
+      id: Date.now().toString(),
+      text: textToSend,
+      sender: 'user',
+      timestamp: Date.now(),
+    };
+    
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
+    // Scroll to bottom
+    setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
+
+    try {
+      // Run heuristic parser locally
+      await new Promise((res) => setTimeout(res, 500)); // Simulating thinking delay
+      const botResponse = getHeuristicResponse(textToSend);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: botResponse,
+          sender: 'bot',
+          timestamp: Date.now(),
+        }
+      ]);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* Header Banner */}
+      <LinearGradient colors={['#6366f1', '#4f46e5']} style={styles.header}>
+        <View style={styles.headerTopRow}>
+          <View>
+            <Text style={styles.headerTitle}>NearFind</Text>
+            <Text style={styles.headerSubtitle}>Hyperlocal Helper & Slider</Text>
+          </View>
+          <TouchableOpacity onPress={logoutUser} style={styles.logoutBtn}>
+            <Ionicons name="log-out-outline" size={20} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
+        
+        {/* Dynamic Image Carousel Slider */}
+        <View style={styles.sliderContainer}>
+          <FlatList
+            ref={flatListRef}
+            data={SLIDER_DATA}
+            keyExtractor={(item) => item.id}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            renderItem={({ item }) => (
+              <View style={styles.slideCard}>
+                <Image source={item.image} style={styles.slideImage} resizeMode="cover" />
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.85)']}
+                  style={styles.slideGradient}
+                >
+                  <Text style={styles.slideTitle}>{item.title}</Text>
+                  <Text style={styles.slideDescription}>{item.description}</Text>
+                </LinearGradient>
+              </View>
+            )}
+          />
+          {/* Slider Dots */}
+          <View style={styles.dotsRow}>
+            {SLIDER_DATA.map((_, idx) => (
+              <View
+                key={idx}
+                style={[
+                  styles.dot,
+                  activeSlide === idx ? styles.dotActive : styles.dotInactive,
+                ]}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Call to Action Grid */}
+        <View style={styles.quickNavContainer}>
+          <Text style={styles.sectionTitle}>Shop & Manage Roles</Text>
+          <View style={styles.quickNavGrid}>
+            <TouchableOpacity
+              style={[styles.quickNavCard, { borderLeftColor: '#4f46e5' }]}
+              onPress={() => selectRole('customer')}
+            >
+              <View style={[styles.quickNavIconBg, { backgroundColor: '#e0e7ff' }]}>
+                <Ionicons name="cart" size={20} color="#4f46e5" />
+              </View>
+              <Text style={styles.quickNavLabel}>Go Shopping</Text>
+              <Text style={styles.quickNavDesc}>Order food & grocery items</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.quickNavCard, { borderLeftColor: '#10b981' }]}
+              onPress={() => selectRole('retailer')}
+            >
+              <View style={[styles.quickNavIconBg, { backgroundColor: '#dcfce7' }]}>
+                <Ionicons name="storefront" size={20} color="#10b981" />
+              </View>
+              <Text style={styles.quickNavLabel}>Retailer Portal</Text>
+              <Text style={styles.quickNavDesc}>Accept & pack customer orders</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* AI Chatbot Module */}
+        <View style={styles.chatSection}>
+          <View style={styles.chatHeader}>
+            <View style={styles.chatHeaderLeft}>
+              <View style={styles.chatLogoBg}>
+                <Ionicons name="chatbubbles" size={18} color="#ffffff" />
+              </View>
+              <View>
+                <Text style={styles.chatTitle}>NearFind Local AI</Text>
+                <Text style={styles.chatSubtitle}>Instant stock & price checker</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Chat Messages */}
+          <ScrollView
+            ref={chatScrollRef}
+            style={styles.chatLogs}
+            contentContainerStyle={styles.chatLogsContent}
+            nestedScrollEnabled
+          >
+            {messages.map((m) => {
+              const isUser = m.sender === 'user';
+              return (
+                <View
+                  key={m.id}
+                  style={[
+                    styles.messageBubbleContainer,
+                    isUser ? styles.messageUserContainer : styles.messageBotContainer,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.messageBubble,
+                      isUser ? styles.messageUserBubble : styles.messageBotBubble,
+                    ]}
+                  >
+                    <Text style={[styles.messageText, isUser && styles.messageUserText]}>
+                      {m.text}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+            
+            {isLoading && (
+              <View style={styles.loadingBubbleContainer}>
+                <ActivityIndicator size="small" color="#6366f1" style={{ marginRight: 8 }} />
+                <Text style={styles.loadingText}>Searching stores...</Text>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Suggested Prompt Pills */}
+          <View style={styles.suggestionsWrapper}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsScroll}>
+              {SUGGESTED_PROMPTS.map((p, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.suggestionPill}
+                  onPress={() => handleSendMessage(p)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.suggestionText}>{p}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Chat Input Console */}
+          <View style={styles.chatInputBar}>
+            <TextInput
+              style={styles.chatTextInput}
+              placeholder="Ask about items, stores, prices..."
+              placeholderTextColor="#94a3b8"
+              value={inputText}
+              onChangeText={setInputText}
+              onSubmitEditing={() => handleSendMessage()}
+              disabled={isLoading}
+            />
+            <TouchableOpacity
+              style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
+              onPress={() => handleSendMessage()}
+              disabled={!inputText.trim() || isLoading}
+            >
+              <Ionicons name="arrow-up" size={18} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  header: {
+    paddingTop: 54,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#e0e7ff',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  scrollContent: {
+    paddingBottom: 90,
+  },
+  
+  // Slider / Carousel styles
+  sliderContainer: {
+    marginVertical: 16,
+    width: width,
+    height: 200,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  slideCard: {
+    width: width - 32,
+    marginHorizontal: 16,
+    height: 190,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#e2e8f0',
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  slideImage: {
+    width: '100%',
+    height: '100%',
+  },
+  slideGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '65%',
+    padding: 16,
+    justifyContent: 'flex-end',
+  },
+  slideTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  slideDescription: {
+    fontSize: 12,
+    color: '#cbd5e1',
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  dotsRow: {
+    position: 'absolute',
+    bottom: 18,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dot: {
+    height: 6,
+    borderRadius: 3,
+    marginHorizontal: 3,
+  },
+  dotActive: {
+    width: 14,
+    backgroundColor: '#ffffff',
+  },
+  dotInactive: {
+    width: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+  },
+
+  // CTA Grid Layout
+  quickNavContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  quickNavGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  quickNavCard: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.01,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  quickNavIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  quickNavLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  quickNavDesc: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+    lineHeight: 14,
+  },
+
+  // AI Chatbot Styles
+  chatSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    backgroundColor: '#fafafa',
+  },
+  chatHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chatLogoBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#6366f1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  chatTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  chatSubtitle: {
+    fontSize: 10,
+    color: '#64748b',
+  },
+  chatLogs: {
+    height: 250,
+    backgroundColor: '#f8fafc',
+  },
+  chatLogsContent: {
+    padding: 12,
+  },
+  messageBubbleContainer: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  messageUserContainer: {
+    justifyContent: 'flex-end',
+  },
+  messageBotContainer: {
+    justifyContent: 'flex-start',
+  },
+  messageBubble: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    maxWidth: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  messageUserBubble: {
+    backgroundColor: '#6366f1',
+    borderBottomRightRadius: 4,
+  },
+  messageBotBubble: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderBottomLeftRadius: 4,
+  },
+  messageText: {
+    fontSize: 13,
+    color: '#334155',
+    lineHeight: 18,
+  },
+  messageUserText: {
+    color: '#ffffff',
+  },
+  loadingBubbleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    marginBottom: 10,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: '#64748b',
+    fontStyle: 'italic',
+  },
+  
+  // Suggestion Pills
+  suggestionsWrapper: {
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingVertical: 8,
+    backgroundColor: '#fafafa',
+  },
+  suggestionsScroll: {
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  suggestionPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.01,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  suggestionText: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '500',
+  },
+
+  // Input Console bar
+  chatInputBar: {
+    flexDirection: 'row',
+    padding: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  chatTextInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    fontSize: 13,
+    color: '#0f172a',
+    marginRight: 8,
+  },
+  sendBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#6366f1',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendBtnDisabled: {
+    backgroundColor: '#cbd5e1',
+  },
+  logoutBtn: {
+    padding: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 8,
+  },
+});

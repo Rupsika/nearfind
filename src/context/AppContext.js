@@ -76,17 +76,127 @@ const SEED_PRODUCTS = [
       quick_mart: { name: 'Quick Mart', price: 20, stock: 2, rating: 4.2, distance: 1.2 },
       super_save: { name: 'Super Save Supermarket', price: 18, stock: 20, rating: 4.5, distance: 2.1 }
     }
+  },
+  {
+    id: 'milk',
+    name: 'Amul Taaza Milk 1L',
+    category: 'Dairy & Eggs',
+    image: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=150',
+    retailers: {
+      sharma: { name: 'Sharma Kirana Store', price: 66, stock: 8, rating: 4.8, distance: 0.5 },
+      quick_mart: { name: 'Quick Mart', price: 68, stock: 12, rating: 4.2, distance: 1.2 },
+      super_save: { name: 'Super Save Supermarket', price: 65, stock: 2, rating: 4.5, distance: 2.1 }
+    }
+  },
+  {
+    id: 'bread',
+    name: 'Harvest Gold Bread 400g',
+    category: 'Packaged Food',
+    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=150',
+    retailers: {
+      sharma: { name: 'Sharma Kirana Store', price: 45, stock: 4, rating: 4.8, distance: 0.5 },
+      quick_mart: { name: 'Quick Mart', price: 45, stock: 6, rating: 4.2, distance: 1.2 },
+      super_save: { name: 'Super Save Supermarket', price: 43, stock: 10, rating: 4.5, distance: 2.1 }
+    }
+  },
+  {
+    id: 'lays',
+    name: 'Lays Classic Salted',
+    category: 'Snacks & Biscuits',
+    image: 'https://images.unsplash.com/photo-1566478989037-eec170784d20?w=150',
+    retailers: {
+      sharma: { name: 'Sharma Kirana Store', price: 20, stock: 15, rating: 4.8, distance: 0.5 },
+      quick_mart: { name: 'Quick Mart', price: 20, stock: 20, rating: 4.2, distance: 1.2 },
+      super_save: { name: 'Super Save Supermarket', price: 19, stock: 30, rating: 4.5, distance: 2.1 }
+    }
+  },
+  {
+    id: 'pepsi',
+    name: 'Pepsi Soda 750ml',
+    category: 'Beverages',
+    image: 'https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=150',
+    retailers: {
+      sharma: { name: 'Sharma Kirana Store', price: 40, stock: 6, rating: 4.8, distance: 0.5 },
+      quick_mart: { name: 'Quick Mart', price: 40, stock: 10, rating: 4.2, distance: 1.2 },
+      super_save: { name: 'Super Save Supermarket', price: 38, stock: 12, rating: 4.5, distance: 2.1 }
+    }
+  },
+  {
+    id: 'rice',
+    name: 'Fortune Basmati Rice 1kg',
+    category: 'Grocery & Staples',
+    image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=150',
+    retailers: {
+      sharma: { name: 'Sharma Kirana Store', price: 110, stock: 3, rating: 4.8, distance: 0.5 },
+      quick_mart: { name: 'Quick Mart', price: 105, stock: 5, rating: 4.2, distance: 1.2 },
+      super_save: { name: 'Super Save Supermarket', price: 108, stock: 15, rating: 4.5, distance: 2.1 }
+    }
+  },
+  {
+    id: 'eggs',
+    name: 'Farm Fresh Eggs 6pcs',
+    category: 'Dairy & Eggs',
+    image: 'https://images.unsplash.com/photo-1516448424440-9dbca97779c1?w=150',
+    retailers: {
+      sharma: { name: 'Sharma Kirana Store', price: 42, stock: 12, rating: 4.8, distance: 0.5 },
+      quick_mart: { name: 'Quick Mart', price: 45, stock: 10, rating: 4.2, distance: 1.2 },
+      super_save: { name: 'Super Save Supermarket', price: 40, stock: 24, rating: 4.5, distance: 2.1 }
+    }
+  },
+  {
+    id: 'chips',
+    name: 'Kurkure Masala Munch 90g',
+    category: 'Snacks & Biscuits',
+    image: 'https://images.unsplash.com/photo-1566478989037-eec170784d20?w=150',
+    retailers: {
+      sharma: { name: 'Sharma Kirana Store', price: 20, stock: 18, rating: 4.8, distance: 0.5 },
+      quick_mart: { name: 'Quick Mart', price: 20, stock: 15, rating: 4.2, distance: 1.2 },
+      super_save: { name: 'Super Save Supermarket', price: 18, stock: 40, rating: 4.5, distance: 2.1 }
+    }
+  },
+  {
+    id: 'juice',
+    name: 'Real Fruit Juice Orange 1L',
+    category: 'Beverages',
+    image: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=150',
+    retailers: {
+      sharma: { name: 'Sharma Kirana Store', price: 120, stock: 4, rating: 4.8, distance: 0.5 },
+      quick_mart: { name: 'Quick Mart', price: 115, stock: 6, rating: 4.2, distance: 1.2 },
+      super_save: { name: 'Super Save Supermarket', price: 110, stock: 8, rating: 4.5, distance: 2.1 }
+    }
+  },
+  {
+    id: 'noodles',
+    name: 'Yippee Masala Noodles 280g',
+    category: 'Packaged Food',
+    image: 'https://images.unsplash.com/photo-1612966608967-3e2b81c5d3f2?w=150',
+    retailers: {
+      sharma: { name: 'Sharma Kirana Store', price: 48, stock: 9, rating: 4.8, distance: 0.5 },
+      quick_mart: { name: 'Quick Mart', price: 50, stock: 5, rating: 4.2, distance: 1.2 },
+      super_save: { name: 'Super Save Supermarket', price: 46, stock: 15, rating: 4.5, distance: 2.1 }
+    }
   }
+];
+
+const DEFAULT_ACCOUNTS = [
+  { name: 'John Customer', email: 'customer@nearfind.com', password: 'password', role: 'customer' },
+  { name: 'Sharma Kirana Manager', email: 'retailer@nearfind.com', password: 'password', role: 'retailer', retailerId: 'sharma' },
+  { name: 'Quick Rider', email: 'delivery@nearfind.com', password: 'password', role: 'delivery' },
+  { name: 'System Admin', email: 'admin@nearfind.com', password: 'password', role: 'admin' }
 ];
 
 export const AppProvider = ({ children }) => {
   const [products, setProducts] = useState(SEED_PRODUCTS);
   const [orders, setOrders] = useState([]);
-  const [activeRole, setActiveRole] = useState('customer'); // customer | retailer | delivery | admin
+  const [activeRole, setActiveRole] = useState(null); // home | customer | retailer | delivery | admin
   const [activeRetailerId, setActiveRetailerId] = useState('sharma'); // sharma | quick_mart | super_save
   const [notifications, setNotifications] = useState([]);
   const [trackingOrderId, setTrackingOrderId] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userAccounts, setUserAccounts] = useState(DEFAULT_ACCOUNTS);
 
   // Persistence keys
   const PERSIST_KEY_PRODUCTS = '@nearfind_products_v1';
@@ -94,6 +204,8 @@ export const AppProvider = ({ children }) => {
   const PERSIST_KEY_ROLE = '@nearfind_role_v1';
   const PERSIST_KEY_RETAILER = '@nearfind_retailer_v1';
   const PERSIST_KEY_TRACKING_ORDER_ID = '@nearfind_tracking_order_id_v1';
+  const PERSIST_KEY_USER = '@nearfind_user_v1';
+  const PERSIST_KEY_ACCOUNTS = '@nearfind_accounts_v1';
 
   // Load state from local storage on mount
   useEffect(() => {
@@ -104,12 +216,41 @@ export const AppProvider = ({ children }) => {
         const storedRole = await AsyncStorage.getItem(PERSIST_KEY_ROLE);
         const storedRetailer = await AsyncStorage.getItem(PERSIST_KEY_RETAILER);
         const storedTrackingOrderId = await AsyncStorage.getItem(PERSIST_KEY_TRACKING_ORDER_ID);
+        const storedUser = await AsyncStorage.getItem(PERSIST_KEY_USER);
+        const storedAccounts = await AsyncStorage.getItem(PERSIST_KEY_ACCOUNTS);
 
-        if (storedProducts) setProducts(JSON.parse(storedProducts));
+        if (storedProducts) {
+          const parsed = JSON.parse(storedProducts);
+          const parsedIds = new Set(parsed.map((p) => p.id));
+          const missing = SEED_PRODUCTS.filter((p) => !parsedIds.has(p.id));
+          if (missing.length > 0) {
+            const merged = [...parsed, ...missing];
+            setProducts(merged);
+            await AsyncStorage.setItem(PERSIST_KEY_PRODUCTS, JSON.stringify(merged));
+          } else {
+            setProducts(parsed);
+          }
+        }
         if (storedOrders) setOrders(JSON.parse(storedOrders));
-        if (storedRole) setActiveRole(storedRole);
         if (storedRetailer) setActiveRetailerId(storedRetailer);
         if (storedTrackingOrderId) setTrackingOrderId(JSON.parse(storedTrackingOrderId));
+
+        if (storedAccounts) {
+          setUserAccounts(JSON.parse(storedAccounts));
+        } else {
+          await AsyncStorage.setItem(PERSIST_KEY_ACCOUNTS, JSON.stringify(DEFAULT_ACCOUNTS));
+        }
+
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          setCurrentUser(parsedUser);
+          setActiveRole(parsedUser.role === 'customer' ? 'home' : parsedUser.role);
+          if (parsedUser.retailerId) {
+            setActiveRetailerId(parsedUser.retailerId);
+          }
+        } else {
+          setActiveRole(null); // Unauthenticated triggers Login UI
+        }
       } catch (e) {
         console.error('Failed to load local state:', e);
       } finally {
@@ -127,6 +268,64 @@ export const AppProvider = ({ children }) => {
       console.error(`Failed to save state for ${key}:`, e);
     }
   };
+
+  // Auth Operations
+  const loginUser = useCallback(async (email, password) => {
+    const user = userAccounts.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) {
+      return { success: false, error: 'Account not found. Please sign up.' };
+    }
+    if (user.password !== password) {
+      return { success: false, error: 'Incorrect password.' };
+    }
+
+    setCurrentUser(user);
+    const defaultRole = user.role === 'customer' ? 'home' : user.role;
+    setActiveRole(defaultRole);
+    if (user.retailerId) {
+      setActiveRetailerId(user.retailerId);
+      await saveToStorage(PERSIST_KEY_RETAILER, user.retailerId);
+    }
+
+    await saveToStorage(PERSIST_KEY_USER, user);
+    await saveToStorage(PERSIST_KEY_ROLE, defaultRole);
+    addNotification(`Welcome back, ${user.name}!`, 'success');
+    return { success: true };
+  }, [userAccounts, addNotification]);
+
+  const registerUser = useCallback(async (name, email, password, role, retailerId = null) => {
+    const exists = userAccounts.some((u) => u.email.toLowerCase() === email.toLowerCase());
+    if (exists) {
+      return { success: false, error: 'Email already registered.' };
+    }
+
+    const newUser = { name, email, password, role, retailerId };
+    const updatedAccounts = [...userAccounts, newUser];
+    setUserAccounts(updatedAccounts);
+    await saveToStorage(PERSIST_KEY_ACCOUNTS, updatedAccounts);
+
+    // Auto-login registered user
+    setCurrentUser(newUser);
+    const defaultRole = role === 'customer' ? 'home' : role;
+    setActiveRole(defaultRole);
+    if (retailerId) {
+      setActiveRetailerId(retailerId);
+      await saveToStorage(PERSIST_KEY_RETAILER, retailerId);
+    }
+
+    await saveToStorage(PERSIST_KEY_USER, newUser);
+    await saveToStorage(PERSIST_KEY_ROLE, defaultRole);
+    addNotification(`Account registered! Welcome, ${name}.`, 'success');
+    return { success: true };
+  }, [userAccounts, addNotification]);
+
+  const logoutUser = useCallback(async () => {
+    setCurrentUser(null);
+    setActiveRole(null);
+    await AsyncStorage.removeItem(PERSIST_KEY_USER);
+    await AsyncStorage.removeItem(PERSIST_KEY_ROLE);
+    addNotification('Logged out successfully.', 'info');
+  }, [addNotification]);
 
   // Persist tracking order ID when it changes
   useEffect(() => {
@@ -478,7 +677,12 @@ export const AppProvider = ({ children }) => {
         selectRole,
         selectRetailer,
         dismissNotification,
-        addNotification
+        addNotification,
+        currentUser,
+        userAccounts,
+        loginUser,
+        registerUser,
+        logoutUser
       }}
     >
       {children}

@@ -15,7 +15,7 @@ import { AppContext } from '../context/AppContext';
 const { width } = Dimensions.get('window');
 
 export default function DeliveryPortal() {
-  const { orders, acceptDelivery, updateOrderStatus } = useContext(AppContext);
+  const { orders, acceptDelivery, updateOrderStatus, logoutUser } = useContext(AppContext);
   const [activeSubTab, setActiveSubTab] = useState('available'); // available | active | stats
 
   // Payout per delivery
@@ -101,7 +101,12 @@ export default function DeliveryPortal() {
     <View style={styles.container}>
       {/* Delivery Stats Header */}
       <LinearGradient colors={['#0284c7', '#0369a1']} style={styles.topBanner}>
-        <Text style={styles.riderLabel}>Delivery Partner Network</Text>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.riderLabel}>Delivery Partner Network</Text>
+          <TouchableOpacity onPress={logoutUser} style={styles.logoutBtn}>
+            <Ionicons name="log-out-outline" size={16} color="#e0f2fe" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.statsContainer}>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>₹{totalEarnings}</Text>
@@ -655,5 +660,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 16,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  logoutBtn: {
+    padding: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
   },
 });

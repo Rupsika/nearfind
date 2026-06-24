@@ -17,19 +17,46 @@ import { AppContext } from '../context/AppContext';
 const { width } = Dimensions.get('window');
 
 export default function CustomerPortal() {
-  const { products, orders, placeOrder, selectRole, trackingOrderId, setTrackingOrderId } = useContext(AppContext);
+  const { products, orders, placeOrder, selectRole, trackingOrderId, setTrackingOrderId, logoutUser } = useContext(AppContext);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [dismissedOrderId, setDismissedOrderId] = useState(null);
   const [activeSubTab, setActiveSubTab] = useState('shop');
   const [expandedHistoryOrderId, setExpandedHistoryOrderId] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [sortBy, setSortBy] = useState('default'); // 'default' | 'nearest' | 'cheapest'
 
-  // Filter products by search query
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter products by search query and category
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Calculate metrics and sort products based on selected sort option
+  const getProductMetrics = (product) => {
+    const carrying = Object.values(product.retailers).filter(r => r.stock > 0);
+    const pool = carrying.length > 0 ? carrying : Object.values(product.retailers);
+    const minDistance = Math.min(...pool.map(r => r.distance));
+    const minPrice = Math.min(...pool.map(r => r.price));
+    return { minDistance, minPrice };
+  };
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortBy === 'nearest') {
+      const distA = getProductMetrics(a).minDistance;
+      const distB = getProductMetrics(b).minDistance;
+      return distA - distB;
+    }
+    if (sortBy === 'cheapest') {
+      const priceA = getProductMetrics(a).minPrice;
+      const priceB = getProductMetrics(b).minPrice;
+      return priceA - priceB;
+    }
+    return 0; // default (matching backend/seed order)
+  });
 
   // Find the latest order overall
   const latestOrder = orders.length > 0 ? orders[0] : null;
@@ -64,10 +91,12 @@ export default function CustomerPortal() {
   // Render product detail comparison view
   if (selectedProduct) {
     const product = products.find((p) => p.id === selectedProduct.id);
-    const retailersList = Object.entries(product.retailers).map(([id, data]) => ({
-      id,
-      ...data,
-    }));
+    const retailersList = Object.entries(product.retailers)
+      .map(([id, data]) => ({
+        id,
+        ...data,
+      }))
+      .sort((a, b) => a.distance - b.distance);
 
     return (
       <View style={styles.container}>
@@ -317,7 +346,7 @@ export default function CustomerPortal() {
                 <Text style={styles.failedTitle}>Order Cancelled / Rejected</Text>
               </View>
               <Text style={styles.failedDescription}>
-                {o.status === 'Rejected' && `The retailer Sharma Kirana rejected your order. The stock has been restored, and no payment was charged.`}
+                {o.status === 'Rejected' && `The retailer ${o.retailerName || 'Sharma Kirana Store'} rejected your order. The stock has been restored, and no payment was charged.`}
                 {o.status === 'Cancelled (Retailer Timeout)' && `The retailer failed to accept the order within the 30-second window. The order was automatically cancelled.`}
                 {o.status === 'Cancelled (No Delivery Partner)' && `No delivery partner accepted the request within 45 seconds. The order was automatically cancelled.`}
               </Text>
@@ -476,7 +505,7 @@ export default function CustomerPortal() {
                   <Text style={styles.failedTitle}>Order Cancelled / Rejected</Text>
                 </View>
                 <Text style={styles.failedDescription}>
-                  {item.status === 'Rejected' && `The retailer Sharma Kirana rejected your order. The stock has been restored, and no payment was charged.`}
+                  {item.status === 'Rejected' && `The retailer ${item.retailerName || 'Sharma Kirana Store'} rejected your order. The stock has been restored, and no payment was charged.`}
                   {item.status === 'Cancelled (Retailer Timeout)' && `Sharma Kirana failed to accept the order within 30 seconds.`}
                   {item.status === 'Cancelled (No Delivery Partner)' && `No delivery rider accepted within 45 seconds.`}
                 </Text>
@@ -495,25 +524,97 @@ export default function CustomerPortal() {
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#4f46e5', '#3730a3']} style={styles.topBanner}>
-        <Text style={styles.appTitle}>NearFind</Text>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.appTitle}>NearFind</Text>
+          <TouchableOpacity onPress={logoutUser} style={styles.logoutBtn}>
+            <Ionicons name="log-out-outline" size={20} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
         <Text style={styles.appSubtitle}>Hyperlocal discovery & lightning-fast deliveries</Text>
 
         {activeSubTab === 'shop' && (
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
-            <TextInput
-              placeholder="Search noodles, butter, atta, beverages..."
-              placeholderTextColor="#94a3b8"
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={18} color="#94a3b8" />
-              </TouchableOpacity>
-            ) : null}
-          </View>
+          <>
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+              <TextInput
+                placeholder="Search noodles, butter, atta, beverages..."
+                placeholderTextColor="#94a3b8"
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery ? (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={18} color="#94a3b8" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoryScroll}
+              contentContainerStyle={styles.categoryScrollContent}
+            >
+              {['All', 'Packaged Food', 'Dairy & Eggs', 'Beverages', 'Grocery & Staples', 'Snacks & Biscuits'].map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.categoryChip,
+                    selectedCategory === cat && styles.categoryChipActive,
+                  ]}
+                  onPress={() => setSelectedCategory(cat)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      selectedCategory === cat && styles.categoryChipTextActive,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.sortContainer}>
+              <Text style={styles.sortLabel}>Sort by:</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.sortScrollContent}
+              >
+                {[
+                  { id: 'default', label: 'Default', icon: 'funnel-outline' },
+                  { id: 'nearest', label: 'Nearest Store', icon: 'location-outline' },
+                  { id: 'cheapest', label: 'Lowest Price', icon: 'pricetag-outline' }
+                ].map((opt) => (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={[
+                      styles.sortChip,
+                      sortBy === opt.id && styles.sortChipActive
+                    ]}
+                    onPress={() => setSortBy(opt.id)}
+                  >
+                    <Ionicons
+                      name={opt.icon}
+                      size={13}
+                      color={sortBy === opt.id ? '#4f46e5' : '#c7d2fe'}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text
+                      style={[
+                        styles.sortChipText,
+                        sortBy === opt.id && styles.sortChipTextActive
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </>
         )}
       </LinearGradient>
 
@@ -540,7 +641,7 @@ export default function CustomerPortal() {
 
       {activeSubTab === 'shop' ? (
         <FlatList
-          data={filteredProducts}
+          data={sortedProducts}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
@@ -1453,5 +1554,81 @@ const styles = StyleSheet.create({
   },
   textBlue: {
     color: '#3b82f6',
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  logoutBtn: {
+    padding: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 8,
+  },
+  categoryScroll: {
+    marginTop: 12,
+  },
+  categoryScrollContent: {
+    gap: 8,
+    paddingRight: 16,
+  },
+  categoryChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  categoryChipActive: {
+    backgroundColor: '#ffffff',
+  },
+  categoryChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#e2e8f0',
+  },
+  categoryChipTextActive: {
+    color: '#4f46e5',
+    fontWeight: '700',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 4,
+  },
+  sortLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#c7d2fe',
+    textTransform: 'uppercase',
+    marginRight: 8,
+    letterSpacing: 0.5,
+  },
+  sortScrollContent: {
+    gap: 8,
+    paddingRight: 16,
+  },
+  sortChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  sortChipActive: {
+    backgroundColor: '#ffffff',
+    borderColor: '#ffffff',
+  },
+  sortChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#cbd5e1',
+  },
+  sortChipTextActive: {
+    color: '#4f46e5',
+    fontWeight: '700',
   },
 });

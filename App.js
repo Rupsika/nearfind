@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppProvider, AppContext } from './src/context/AppContext';
 import NotificationToast from './src/components/NotificationToast';
+import AuthPortal from './src/screens/AuthPortal';
+import HomePortal from './src/screens/HomePortal';
 import CustomerPortal from './src/screens/CustomerPortal';
 import RetailerPortal from './src/screens/RetailerPortal';
 import DeliveryPortal from './src/screens/DeliveryPortal';
@@ -91,7 +93,7 @@ function SplashScreen({ onDone }) {
 
 
 function MainAppShell() {
-  const { activeRole, selectRole, isLoaded, orders } = useContext(AppContext);
+  const { activeRole, selectRole, isLoaded, orders, currentUser } = useContext(AppContext);
   const [showSplash, setShowSplash] = useState(true);
   const [minTimePassed, setMinTimePassed] = useState(false);
   const [exitingSplash, setExitingSplash] = useState(false);
@@ -137,20 +139,33 @@ function MainAppShell() {
     );
   }
 
+  if (!currentUser) {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="auto" />
+        <NotificationToast />
+        <AuthPortal />
+      </View>
+    );
+  }
+
+  const isCustomer = currentUser.role === 'customer';
 
   const renderActiveScreen = () => {
     switch (activeRole) {
+      case 'home': return <HomePortal />;
       case 'customer': return <CustomerPortal />;
       case 'retailer': return <RetailerPortal />;
       case 'delivery': return <DeliveryPortal />;
       case 'admin': return <AdminDashboard />;
-      default: return <CustomerPortal />;
+      default: return <HomePortal />;
     }
   };
 
   const getRoleColor = (role) => {
     if (activeRole === role) {
       switch (role) {
+        case 'home': return '#6366f1';
         case 'customer': return '#4f46e5';
         case 'retailer': return '#0f172a';
         case 'delivery': return '#0284c7';
@@ -169,42 +184,20 @@ function MainAppShell() {
         {renderActiveScreen()}
       </View>
 
-      {/* Bottom Tab Bar */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity style={styles.tabBtn} onPress={() => selectRole('customer')}>
-          <Ionicons name="cart" size={24} color={getRoleColor('customer')} />
-          <Text style={[styles.tabLabel, { color: getRoleColor('customer') }]}>Customer</Text>
-        </TouchableOpacity>
+      {/* Bottom Tab Bar (Only visible to Customers to navigate Home/Shop) */}
+      {isCustomer && (
+        <View style={styles.tabBar}>
+          <TouchableOpacity style={styles.tabBtn} onPress={() => selectRole('home')}>
+            <Ionicons name="home" size={24} color={getRoleColor('home')} />
+            <Text style={[styles.tabLabel, { color: getRoleColor('home') }]}>Home</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabBtn} onPress={() => selectRole('retailer')}>
-          <View>
-            <Ionicons name="storefront" size={24} color={getRoleColor('retailer')} />
-            {retailerPendingCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{retailerPendingCount}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={[styles.tabLabel, { color: getRoleColor('retailer') }]}>Retailer</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.tabBtn} onPress={() => selectRole('delivery')}>
-          <View>
-            <Ionicons name="bicycle" size={24} color={getRoleColor('delivery')} />
-            {deliveryAvailableCount > 0 && (
-              <View style={[styles.badge, { backgroundColor: '#f59e0b' }]}>
-                <Text style={styles.badgeText}>{deliveryAvailableCount}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={[styles.tabLabel, { color: getRoleColor('delivery') }]}>Delivery</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.tabBtn} onPress={() => selectRole('admin')}>
-          <Ionicons name="analytics" size={24} color={getRoleColor('admin')} />
-          <Text style={[styles.tabLabel, { color: getRoleColor('admin') }]}>Admin</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={styles.tabBtn} onPress={() => selectRole('customer')}>
+            <Ionicons name="cart" size={24} color={getRoleColor('customer')} />
+            <Text style={[styles.tabLabel, { color: getRoleColor('customer') }]}>Shop</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
