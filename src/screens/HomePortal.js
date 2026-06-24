@@ -46,9 +46,9 @@ const SLIDER_DATA = [
 
 const SUGGESTED_PROMPTS = [
   "Is Maggi in stock?",
+  "How do I cancel my order?",
+  "Support for delayed orders",
   "Compare Amul Butter prices",
-  "Any Coca-Cola nearby?",
-  "What is NearFind?",
 ];
 
 export default function HomePortal() {
@@ -148,6 +148,31 @@ export default function HomePortal() {
       return text;
     }
 
+    // Support: Delivery Delay
+    if (lower.includes('delay') || lower.includes('late') || lower.includes('where is my') || lower.includes('delivery time')) {
+      return "If your active order is delayed, check the live map tracking inside the 'Shop -> My Orders' tab. Delivery times usually range between 15-20 minutes depending on rider acceptance.";
+    }
+
+    // Support: Cancellation & Refund
+    if (lower.includes('cancel') || lower.includes('refund') || lower.includes('return')) {
+      return "You can request cancellations through customer support prior to store acceptance. If an order is rejected or timed out, your stock is instantly restored, and no payment is charged. Refunds are processed within 2-3 business days.";
+    }
+
+    // Support: Payment options
+    if (lower.includes('payment') || lower.includes('pay') || lower.includes('card') || lower.includes('cod')) {
+      return "NearFind currently supports simulated payments for demonstration purposes. We plan to integrate Stripe, Razorpay, and UPI gateways in our next version.";
+    }
+
+    // Support: Address change
+    if (lower.includes('address') || lower.includes('change location') || lower.includes('neighborhood')) {
+      return "To simulate different delivery destinations, use the neighborhood selector at the top header in the 'Shop' tab. This will instantly adjust store distances and routes.";
+    }
+
+    // Support: Damaged or missing items
+    if (lower.includes('missing') || lower.includes('wrong') || lower.includes('damaged') || lower.includes('complain')) {
+      return "We apologize for the inconvenience! Please contact support at support@nearfind.com with your Order ID, and our customer satisfaction team will issue a refund or redelivery immediately.";
+    }
+
     // General app info
     if (lower.includes('nearfind') || lower.includes('what is') || lower.includes('how does')) {
       return "NearFind is a hyperlocal delivery app that connects customers to nearby Kirana stores (like Sharma Kirana) and lets delivery agents accept jobs to bring items directly to your door in real time!";
@@ -167,7 +192,7 @@ export default function HomePortal() {
       return "Hello! I am your local NearFind assistant. How can I help you find groceries today?";
     }
 
-    return "I can help you find products, check stock, or compare prices across nearby stores. Try asking me something like 'Is Maggi in stock?' or 'Compare Coke prices'!";
+    return "I can help you search products, check stock, or resolve support issues (delays, refunds, cancellations). Try asking 'Is Maggi in stock?' or 'How do I cancel my order?'";
   };
 
   // Send Message Wrapper
